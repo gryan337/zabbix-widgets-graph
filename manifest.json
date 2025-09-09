@@ -1,0 +1,32 @@
+{
+	"manifest_version": 2.0,
+	"id": "svggraph-rme",
+	"type": "widget",
+	"name": "RME Graph",
+	"namespace": "RMESvgGraph",
+	"version": "1.0",
+	"author": "Ryan Eberly",
+	"description": "A more advanced implementation of the Zabbix SvgGraph widget",
+	"widget": {
+		"js_class": "CWidgetSvgGraphRME",
+		"in": {
+			"time_period": {
+				"type": "_timeperiod"
+			}
+		},
+		"out": [
+			{
+				"type": "_timeperiod"
+			}
+		]
+	},
+	"actions": {
+		"widget.svggraph-rme.view": {
+			"class": "WidgetView"
+		}
+	},
+	"assets": {
+		"js": ["class.widget.js", "class.csvggraph-rme.js"],
+		"css": ["widget.css"]
+	}
+}

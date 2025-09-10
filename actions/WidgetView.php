@@ -154,7 +154,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 			}
 
 			$newItemids = [];
-			$newTypes = [];
 			$newColors = [];
 
 			$hasAny = false;
@@ -192,14 +191,12 @@ class WidgetView extends CControllerDashboardWidgetView {
 					}
 
 					$newItemids[] = $itemid;
-					$newTypes[] = $typeValue;
 					$newColors[] = $finalColor;
 				}
 			}
 
 			if ($hasAny) {
 				$ds['itemids'] = $newItemids;
-				$ds['type'] = $newTypes;
 				$ds['color'] = $newColors;
 			}
 		}
@@ -344,7 +341,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 	}
 
 	private function labDistance(array $lab1, array $lab2): float {
-		return sort(
+		return sqrt(
 			pow($lab1[0] - $lab2[0], 2) +
 			pow($lab1[1] - $lab2[1], 2) +
 			pow($lab1[2] - $lab2[2], 2)

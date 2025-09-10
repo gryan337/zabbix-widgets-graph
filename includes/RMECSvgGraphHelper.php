@@ -951,7 +951,7 @@ class RMECSvgGraphHelper {
 		}
 
 		if (count($metrics) === 1 && array_key_exists('color', $data_sets[$dataset_num])) {
-			$metrics[0]['options']['color'] = '#'.$data_sets[$dataset_num]['color'];
+			$metrics[0]['options']['color'] = '#'.$data_sets[$dataset_num]['color'][0];
 		}
 
 		foreach ($metrics as &$metric) {

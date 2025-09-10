@@ -700,7 +700,7 @@ class RMECSvgGraph extends CSvg {
 			}
 
 			if (in_array($metric['name'], $this->lines_hidden_js_override) &&
-					$metric['options']['stacked'] === SVG_GRAPH_STACKED_ON) {
+					$metric['options']['stacked'] == SVG_GRAPH_STACKED_ON) {
 				foreach ($this->points[$index] as &$timestamps) {
 					foreach ($timestamps as &$values) {
 						$values['min'] = null;

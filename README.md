@@ -5,6 +5,7 @@ An enhanced Graph Widget for the Zabbix Dashboard
 - Adds an interactive legend that enables toggling on/off of lines/points/bars in the graph. This feature allows for single-click as well as holding the ctrl-key to select/unselect multiple items in the legend. (NOTE: metrics in the legend with the same name will prevent this from working correctly. for now, ensure all metrics have distinct names in the legend).
 - All values will now display in the legend, and additional metrics will now overflow and scroll bar is added in the legend.
 - Adds the ability to sort legend statistics by the max/avg/min colums (NOTE: can not sort by metric name (yet))
+- If the name of the metric in the legend is too long an ellipsis is shown. Modifications have been made to show the full name when hovering over these metrics with a tooltip
 - Adds point highlighting in the graph tooltip / hintbox.
 - Adds the ability to sort the graph tooltip / hintbox by name or value (asc or desc).
 - Changes the tooltip / hintbox to left-align the metric name and right-align the value allowing for easier distinction of the name and value.

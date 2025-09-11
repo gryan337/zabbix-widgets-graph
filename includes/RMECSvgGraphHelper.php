@@ -132,7 +132,7 @@ class RMECSvgGraphHelper {
 	}
 
 	private static function suppressZeros(array &$metrics, array $display_options): void {
-		if ($display_options['show_suppress_zero_values'] === WidgetView::SVG_GRAPH_SUPPRESS_ZEROS_TRUE) {
+		if ($display_options['show_suppress_zero_values'] == WidgetView::SVG_GRAPH_SUPPRESS_ZEROS_TRUE) {
 			foreach ($metrics as $data => $metric) {
 				$all_zero = true;
 

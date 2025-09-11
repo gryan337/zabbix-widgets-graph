@@ -140,7 +140,7 @@
 
 		var configured_units = x.g.dataset.units;
 		if (configured_units.startsWith('!')) {
-			return splix[0];
+			return splitx[0];
 		}
 
 		if (DateUnits.includes(configured_units)) {

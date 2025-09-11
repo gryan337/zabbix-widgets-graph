@@ -451,6 +451,7 @@ class CWidgetSvgGraphRME extends CWidget {
 					else {
 						this._selected_metrics.clear();
 						if (this._fields.ds.some(obj => obj.stacked === '1')) {
+							this._selected_metric_overrides = {...this._initialOverrides};
 							this._startUpdating();
 							return;
 						}

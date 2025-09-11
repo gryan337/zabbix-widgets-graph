@@ -781,7 +781,8 @@ class RMECSvgGraphHelper {
 
 		// Request data.
 		foreach ($tr_groups as $tr_group) {
-			$results = RMECHistoryManager::getGraphAggregationByWidth($tr_group['items'], $tr_group['time']['from'],
+			$historyManager = new \Modules\RMESvgGraph\Includes\RMECHistoryManager();
+			$results = $historyManager->getGraphAggregationByWidth($tr_group['items'], $tr_group['time']['from'],
 				$tr_group['time']['to'], $width
 			);
 

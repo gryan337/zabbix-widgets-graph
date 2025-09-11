@@ -16,5 +16,5 @@ An enhanced Graph Widget for the Zabbix Dashboard
 - Adds the ability to prune all metrics where all values are 0. This is available as a checkbox in the Displaying options tab.
 - Fixes an issue when using aggregate by dataset whereby the selected color does not end up being the color in display. This issue has to do with the color hue decrementing code for each individual metric and depending on the number of metrics aggregated you end up with some unexpected shade of the color chosen. When you aggregate by dataset now, the color chosen is what will be displayed.
 
-## Coming Soon...
-- This widget has been modified to accept multiple itemids broadcasted from certain widgets in the gryan337 git repository. More documentation coming soon.
+## Disruptively Innovative Modifications
+- This widget has been modified to accept multiple itemids broadcasted from certain widgets in the gryan337 git repository. As of right now the zabbix-widgets-itemnavigator module can broadcast multiple itemds. Soon, the Table widget will be able to (with significant advanced interactive functionality). More documentation coming soon!

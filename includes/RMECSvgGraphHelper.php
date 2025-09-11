@@ -954,7 +954,7 @@ class RMECSvgGraphHelper {
 		if (count($metrics) === 1) {
 			$ds_num = $metrics[0]['data_set'];
 			if (array_key_exists('color', $data_sets[$ds_num])) {
-				$metrics[0]['options']['color'] = '#'.$data_sets[$ds_num]['color'];
+				$metrics[0]['options']['color'] = '#'.$data_sets[$ds_num]['color'][0];
 			}
 		}
 

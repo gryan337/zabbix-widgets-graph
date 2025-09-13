@@ -18,3 +18,28 @@ An enhanced Graph Widget for the Zabbix Dashboard
 
 ## Disruptively Innovative Modifications
 - This widget has been modified to accept multiple itemids broadcasted from certain widgets in the gryan337 git repository. As of right now the zabbix-widgets-itemnavigator module can broadcast multiple itemds. Soon, the Table widget will be able to (with significant advanced interactive functionality). More documentation coming soon!
+
+
+# 🚀 Project Roadmap
+
+A high-level view of our project milestones and upcoming goals.
+
+---
+
+## 📍 September 2025
+
+- [ ] Add the ability to change the graph aggregation with a drop-down selection or from the actions menu of the widget  
+- [ ] Basic documentation written along with screen shots of the enhancements  
+- [ ] Final QA & bug fixes (please submit bugs!)  
+
+---
+
+## 🛠️ Upcoming (Q4 2025)
+
+| Milestone | Status | Target |
+|-----------|--------|--------|
+| Crowd sourced feature requests | Upcoming | October 2025 |
+| Research possibility of having the legend on the right side of the graph | 🔜 Planned | November 2025 |
+| Continuous improvement and listening to what user need | 🔜 Planned | December 2025 |
+
+---

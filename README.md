@@ -39,7 +39,8 @@ A high-level view of our project milestones and upcoming goals.
 | Milestone | Status | Target |
 |-----------|--------|--------|
 | Crowd sourced feature requests | Upcoming | October 2025 |
-| Research possibility of having the legend on the right side of the graph | 🔜 Planned | November 2025 |
-| Continuous improvement and listening to what users need | 🔜 Planned | December 2025 |
+| Research possibility of having the legend on the right side of the graph | 🔜 Planned | Q4 2025 |
+| Research possibility of adding a header value for legend metric name which could permit sorting it | 🔜 Planned | Q4 2025 |
+| Continuous improvement and listening to what users need | 🔜 Planned | Q4 2025 |
 
 ---

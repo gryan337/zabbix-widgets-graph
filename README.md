@@ -40,6 +40,6 @@ A high-level view of our project milestones and upcoming goals.
 |-----------|--------|--------|
 | Crowd sourced feature requests | Upcoming | October 2025 |
 | Research possibility of having the legend on the right side of the graph | 🔜 Planned | November 2025 |
-| Continuous improvement and listening to what user need | 🔜 Planned | December 2025 |
+| Continuous improvement and listening to what users need | 🔜 Planned | December 2025 |
 
 ---

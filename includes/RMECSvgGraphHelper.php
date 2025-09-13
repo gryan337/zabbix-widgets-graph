@@ -928,7 +928,8 @@ class RMECSvgGraphHelper {
 		$merged = [];
 		$unmerged = [];
 		foreach ($metrics as $array) {
-			if ($array['options']['aggregate_grouping'] != CWidgetFieldDataSet::GRAPH_AGGREGATE_BY_NAME) {
+			if ($array['options']['aggregate_function'] == AGGREGATE_NONE ||
+					$array['options']['aggregate_grouping'] != CWidgetFieldDataSet::GRAPH_AGGREGATE_BY_NAME) {
 				$unmerged[] = $array;
 				continue;
 			}
@@ -948,10 +949,10 @@ class RMECSvgGraphHelper {
 			$metrics[] = $a;
 		}
 
-		if (count($metrics) === 1) {
+		if (count($metrics) === 1 && $metrics[0]['options']['aggregate_function'] != AGGREGATE_NONE) {
 			$ds_num = $metrics[0]['data_set'];
 			if (array_key_exists('color', $data_sets[$ds_num])) {
-				$metrics[0]['options']['color'] = ($data_sets[$dataset_num]['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_PATTERN_ITEM)
+				$metrics[0]['options']['color'] = ($data_sets[$ds_num]['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_PATTERN_ITEM)
 					? '#'.$data_sets[$ds_num]['color']
 					: '#'.$data_sets[$ds_num]['color'][0];
 			}

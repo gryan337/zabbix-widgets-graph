@@ -3,6 +3,8 @@
 class CWidgetSvgGraphRME extends CWidget {
 
 	static DATASET_TYPE_SINGLE_ITEM = 0;
+	static AGGREGATE_GROUPING_DATASET = 1;
+	static AGGREGATE_GROUPING_EACH_ITEM = 0;
 	static AXIS_RIGHT = '1';
 	static AXIS_LEFT = '0';
 	static MAX_MULTIPLIER = 1.15;
@@ -54,6 +56,7 @@ class CWidgetSvgGraphRME extends CWidget {
 	}
 
 	#theme = 'dark-theme';
+	#aggOverrideActive = 'original';
 
 	onInitialize() {
 		this._has_contents = false;
@@ -204,6 +207,54 @@ class CWidgetSvgGraphRME extends CWidget {
 			request_data.fields.lines_hidden_js_override = [...this.hiddenLines.keys()];
 		}
 
+		if (this.#aggOverrideActive !== null) {
+			for (let i = 0; i < request_data.fields.ds.length; i++) {
+				let ds = i + 1;
+				const label = (this._fields.ds[i]['data_set_label'])
+					? this._fields.ds[i]['data_set_label']
+					: 'Dataset #' + ds;
+
+				switch (this.#aggOverrideActive) {
+					case 'min':
+						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
+						request_data.fields.ds[i]['aggregate_interval'] = '1m';
+						request_data.fields.ds[i]['aggregate_function'] = '1';
+						request_data.fields.ds[i]['data_set_label'] = 'Minimum: ' + label;
+						break;
+					case 'max':
+						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
+						request_data.fields.ds[i]['aggregate_interval'] = '1m';
+						request_data.fields.ds[i]['aggregate_function'] = '2';
+						request_data.fields.ds[i]['data_set_label'] = 'Maximum: ' + label;
+						break;
+					case 'avg':
+						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
+						request_data.fields.ds[i]['aggregate_interval'] = '1m';
+						request_data.fields.ds[i]['aggregate_function'] = '3';
+						request_data.fields.ds[i]['data_set_label'] = 'Average: ' + label;
+						break;
+					case 'sum':
+						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
+						request_data.fields.ds[i]['aggregate_interval'] = '1m';
+						request_data.fields.ds[i]['aggregate_function'] = '100';
+						request_data.fields.ds[i]['data_set_label'] = 'Sum: ' + label;
+						break;
+					case 'each':
+						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_EACH_ITEM;
+						request_data.fields.ds[i]['aggregate_interval'] = '1m';
+						request_data.fields.ds[i]['aggregate_function'] = '0';
+						request_data.fields.ds[i]['data_set_label'] = '';
+						break;
+					case 'original':
+						request_data.fields.ds[i]['aggregate_grouping'] = this._fields.ds[i]['aggregate_grouping'];
+						request_data.fields.ds[i]['aggregate_interval'] = this._fields.ds[i]['aggregate_interval'];
+						request_data.fields.ds[i]['aggregate_function'] = this._fields.ds[i]['aggregate_function'];
+						request_data.fields.ds[i]['data_set_label'] = this._fields.ds[i]['data_set_label'];
+						break;
+				}
+			}
+		}
+
 		for (const [dataset_key, dataset] of request_data.fields.ds.entries()) {
 			if (dataset.dataset_type != CWidgetSvgGraphRME.DATASET_TYPE_SINGLE_ITEM) {
 				continue;
@@ -244,6 +295,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		super.processUpdateResponse(response);
 
 		this.getTheme();
+		this._addGraphDisplayMenu();
 		this._setupScrollListener();
 		this._scrollToLastPosition();
 
@@ -324,6 +376,220 @@ class CWidgetSvgGraphRME extends CWidget {
 		}
 	}
 
+	_addGraphDisplayMenu() {
+		const widgetHeader = this._container.querySelector('.dashboard-grid-widget-header');
+
+		if (widgetHeader.querySelector('.graph-display-trigger')) {
+			return;
+		}
+
+		const trigger = document.createElement('button');
+		trigger.type = 'button';
+		trigger.className = 'graph-display-trigger';
+
+		let color = '#fff';
+		let backgroundColor = '#1e1e1e';
+		let border = '#383838';
+
+		switch (this.#theme) {
+			case 'blue-theme':
+			case 'hc-light':
+				backgroundColor = 'white';
+				color = 'black';
+				border = '#ccd5d9';
+				break;
+		}
+
+		const tooltip = document.createElement('div');
+		tooltip.className = 'custom-tooltip';
+		tooltip.style.position = 'absolute';
+		tooltip.style.padding = '4px 8px';
+		tooltip.style.background = backgroundColor;
+		tooltip.style.color = color;
+		tooltip.style.border = `1px solid ${border}`;
+		tooltip.style.borderRadius = '3px';
+		tooltip.style.fontSize = '12px';
+		tooltip.style.pointerEvents = 'none';
+		tooltip.style.opacity = '0';
+		document.body.appendChild(tooltip);
+
+		trigger.addEventListener('mouseenter', (e) => {
+			tooltip.style.opacity = '1';
+			this._showTooltip(
+				t('Change how metrics are aggregated in the graph'),
+				e,
+				tooltip
+			);
+		});
+
+		trigger.addEventListener('mousemove', (e) => {
+			tooltip.style.opacity = '0';
+			this._showTooltip(
+				t('Change how metrics are aggregated in the graph'),
+				e,
+				tooltip
+			);
+		});
+
+		trigger.addEventListener('mouseleave', () => {
+			tooltip.style.opacity = '0';
+		});
+
+		trigger.innerHTML = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+				viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="4" y1="6" x2="20" y2="6"/>
+				<line x1="4" y1="12" x2="16" y2="12"/>
+				<line x1="4" y1="18" x2="12" y2="18"/>
+			</svg>
+		`;
+
+		trigger.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this._toggleGraphDisplayMenu(trigger);
+		});
+
+		const widgetTitle = widgetHeader.querySelector('h4');
+		widgetHeader.insertBefore(trigger, widgetTitle.nextSibling);
+	}
+
+	_toggleGraphDisplayMenu(trigger) {
+		if (this._graphDisplayMenu) {
+			this._graphDisplayMenu.remove();
+			if (this._graphDisplayMenuCloseHandler) {
+				document.removeEventListener('click', this._graphDisplayMenuCloseHandler);
+				this._graphDisplayMenuCloseHandler = null;
+			}
+
+			if (this._graphDisplayMenuRepositionHandler) {
+				window.removeEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
+				window.removeEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
+				this._graphDisplayMenuRepositionHandler = null;
+			}
+
+			if (this._graphDisplayMenuRafId) {
+				cancelAnimationFrame(this._graphDisplayMenuRafId);
+				this._graphDisplayMenuRafId = null;
+			}
+
+			this._graphDisplayMenu = null;
+			return;
+		}
+
+		const menu = document.createElement('ul');
+		menu.className = 'graph-display-menu';
+		menu.style.position = 'fixed';
+		menu.style.zIndex = '100000';
+		this._graphDisplayMenu = menu;
+
+		const viewOptions = [
+			{ value: 'original', label: 'Default view', tooltip: 'Shows the original metrics as they were configured in the widget' },
+			{ value: 'sum', label: 'Aggregate sum', tooltip: 'Sums all the metrics' },
+			{ value: 'avg', label: 'Aggregate avg', tooltip: 'Averages all metrics' },
+			{ value: 'min', label: 'Aggregate min', tooltip: 'Displays the minimum of all metrics' },
+			{ value: 'max', label: 'Aggregate max', tooltip: 'Displays the maximum of all metrics' },
+			{ value: 'each', label: 'Each metric', tooltip: 'Displays each metric individually, showing the host and metric name' }
+		];
+
+		viewOptions.forEach(opt => {
+			const li = document.createElement('li');
+			li.textContent = opt.label;
+			if (this.#aggOverrideActive === opt.value) li.classList.add('selected');
+			if (opt.tooltip) li.title = opt.tooltip;
+
+			li.addEventListener('click', (e) => {
+				e.stopPropagation();
+				this.#aggOverrideActive = opt.value;
+				this._startUpdating();
+
+				if (this.#aggOverrideActive !== 'original') {
+					trigger.classList.add('active');
+				}
+				else {
+					trigger.classList.remove('active');
+				}
+
+				menu.remove();
+				if (this._graphDisplayMenuCloseHandler) {
+					document.removeEventListener('click', this._graphDisplayMenuCloseHandler);
+					this._graphDisplayMenuCloseHandler = null;
+				}
+
+				if (this._graphDisplayMenuRepositionHandler) {
+					window.removeEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
+					window.removeEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
+					this._graphDisplayMenuRepositionHandler = null;
+				}
+
+				if (this._graphDisplayMenuRafId) {
+					cancelAnimationFrame(this._graphDisplayMenuRafId);
+					this._graphDisplayMenuRafId = null;
+				}
+
+				this._graphDisplayMenu = null;
+			});
+
+			menu.appendChild(li);
+		});
+
+		const placeMenu = () => {
+			const rect = trigger.getBoundingClientRect();
+			menu.style.top = `${Math.round(rect.bottom)}px`;
+			menu.style.left = `${Math.round(rect.left)}px`;
+			const mRect = menu.getBoundingClientRect();
+			if (mRect.right > window.innerWidth) {
+				const shift = mRect.right - window.innerWidth + 8; // 8px padding
+				menu.style.left = `${Math.max(8, Math.round(rect.left - shift))}px`;
+			}
+
+			if (mRect.bottom > window.innerHeight) {
+				const altTop = rect.top - mRect.height;
+				if (altTop > 8) menu.style.top = `${Math.round(altTop)}px`;
+			}
+		};
+
+		const rafPlace = () => {
+			if (this._graphDisplayMenuRafId) cancelAnimationFrame(this._graphDisplayMenuRafId);
+			this._graphDisplayMenuRafId = requestAnimationFrame(() => {
+				placeMenu();
+				this._graphDisplayMenuRafId = null;
+			});
+		};
+
+		this._graphDisplayMenuRepositionHandler = () => {
+			rafPlace();
+		};
+
+		window.addEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
+		window.addEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
+
+		this._graphDisplayMenuCloseHandler = (e) => {
+			if (!menu.contains(e.target) && e.target !== trigger) {
+				menu.remove();
+				document.removeEventListener('click', this._graphDisplayMenuCloseHandler);
+				this._graphDisplayMenuCloseHandler = null;
+
+				if (this._graphDisplayMenuRepositionHandler) {
+					window.removeEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
+					window.removeEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
+					this._graphDisplayMenuRepositionHandler = null;
+				}
+
+				if (this._graphDisplayMenuRafId) {
+					cancelAnimationFrame(this._graphDisplayMenuRafId);
+					this._graphDisplayMenuRafId = null;
+				}
+
+				this._graphDisplayMenu = null;
+			}
+		};
+		document.addEventListener('click', this._graphDisplayMenuCloseHandler);
+
+		document.body.appendChild(menu);
+		placeMenu();
+	}
+
 	getActionsContextMenu({can_copy_widget, can_paste_widget}) {
 		const menu = super.getActionsContextMenu({can_copy_widget, can_paste_widget});
 
@@ -368,7 +634,7 @@ class CWidgetSvgGraphRME extends CWidget {
 	_setupLegendClickHandlers() {
 		this.hiddenLines = new Map();
 
-		const tooltip = this._addLegendStyling();
+		const tooltip = this._addAddlGraphStyling();
 
 		const restoreAllLines = () => {
 			this.hiddenLines.clear();
@@ -831,11 +1097,11 @@ class CWidgetSvgGraphRME extends CWidget {
 		return rawValues;
 	}
 
-	_addLegendStyling() {
-		if ($('style.legend-tooltip-styles').length === 0) {
-			const legendTooltipStyle = document.createElement('style');
-			legendTooltipStyle.classList.add('legend-tooltip-styles');
-			legendTooltipStyle.textContent = `
+	_addAddlGraphStyling() {
+		if ($('style.custom-graph-styles').length === 0) {
+			const customGraphStyle = document.createElement('style');
+			customGraphStyle.classList.add('custom-graph-styles');
+			customGraphStyle.textContent = `
 				.svg-graph-legend-item {
 					display: flex;
 					align-items: center;
@@ -849,8 +1115,54 @@ class CWidgetSvgGraphRME extends CWidget {
 					max-width: 100%;
 					flex: 1;
 				}
+				.graph-display-trigger {
+					background: transparent;
+					border: none;
+					cursor: pointer;
+					color: var(--graph-trigger-color);
+					padding: 2px 4px;
+					font-size: 14px;
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					padding-top: 4px;
+				}
+				.graph-display-trigger:hover {
+					color: var(--graph-trigger-color);
+					background: var(--hover-bg);
+					border-radius: 2px;
+				}
+				.graph-display-trigger.active {
+					color: #2b6bd4;
+				}
+				.graph-display-menu {
+					list-style: none;
+					margin: 0;
+					padding: 0;
+					background: var(--menu-bg);
+					border: 1px solid var(--menu-border);
+					min-width: 140px;
+					z-index: 10000;
+				}
+				.graph-display-menu li {
+					padding: 4px 8px;
+					cursor: pointer;
+				}
+				.graph-display-menu li:hover {
+					background: #01579B;
+					color: #fff;
+				}
+				.graph-display-menu li.selected {
+					background-color: rgba(1, 87, 155, 0.3);
+					font-weight: bold;
+				}
+				.custom-tooltip {
+					pointer-events: none;
+					transition: opacity 0.1s;
+					z-index: 10000;
+				}
 			`;
-			document.head.appendChild(legendTooltipStyle);
+			document.head.appendChild(customGraphStyle);
 		}
 
 		const tooltip = document.createElement('div');
@@ -859,11 +1171,22 @@ class CWidgetSvgGraphRME extends CWidget {
 		let color = 'white';
 		let backgroundColor = 'rgba(60, 60, 60, 0.95)';
 
+		const root = document.documentElement;
 		switch (this.#theme) {
 			case 'blue-theme':
 			case 'hc-light':
 				backgroundColor = 'rgba(194, 194, 194, 0.95)';
 				color = 'black';
+				root.style.setProperty('--graph-trigger-color', '#646464');
+				root.style.setProperty('--hover-bg', '#cacaca');
+				root.style.setProperty('--menu-bg', '#fff');
+				root.style.setProperty('--menu-border', '#ccd5d9');
+				break;
+			default:
+				root.style.setProperty('--graph-trigger-color', '#c1c1c1');
+				root.style.setProperty('--hover-bg', '#5c5c5c');
+				root.style.setProperty('--menu-bg', '#1e1e1e');
+				root.style.setProperty('--menu-border', '#383838');
 				break;
 		}
 
@@ -945,15 +1268,16 @@ class CWidgetSvgGraphRME extends CWidget {
 		tooltip.style.left = '-9999px';
 		tooltip.style.top = '-9999px';
 		const tooltipRect = tooltip.getBoundingClientRect();
+
 		let left = event.pageX + padding;
 		let top = event.pageY + padding;
 
 		if (left + tooltipRect.width > window.innerWidth) {
-			left = event.pageX = tooltipRect.width - padding;
+			left = window.innerWidth - tooltipRect.width - padding;
 		}
 
 		if (top + tooltipRect.height > window.innerHeight) {
-			top = event.pageY = tooltipRect.height - padding;
+			top = window.innerHeight - tooltipRect.height - padding;
 		}
 
 		tooltip.style.left = `${left}px`;

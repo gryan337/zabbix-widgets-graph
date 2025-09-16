@@ -207,51 +207,30 @@ class CWidgetSvgGraphRME extends CWidget {
 			request_data.fields.lines_hidden_js_override = [...this.hiddenLines.keys()];
 		}
 
-		if (this.#aggOverrideActive !== null) {
-			for (let i = 0; i < request_data.fields.ds.length; i++) {
-				let ds = i + 1;
-				const label = (this._fields.ds[i]['data_set_label'])
-					? this._fields.ds[i]['data_set_label']
-					: 'Dataset #' + ds;
+		const overrides = {
+			min:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '1',   prefix: 'Minimum: ' },
+			max:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '2',   prefix: 'Maximum: ' },
+			avg:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '3',   prefix: 'Average: ' },
+			sum:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '100', prefix: 'Sum: ' },
+			each: { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_EACH_ITEM, interval: '10m', fn: '0', prefix: '' }
+		};
 
-				switch (this.#aggOverrideActive) {
-					case 'min':
-						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
-						request_data.fields.ds[i]['aggregate_interval'] = '1m';
-						request_data.fields.ds[i]['aggregate_function'] = '1';
-						request_data.fields.ds[i]['data_set_label'] = 'Minimum: ' + label;
-						break;
-					case 'max':
-						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
-						request_data.fields.ds[i]['aggregate_interval'] = '1m';
-						request_data.fields.ds[i]['aggregate_function'] = '2';
-						request_data.fields.ds[i]['data_set_label'] = 'Maximum: ' + label;
-						break;
-					case 'avg':
-						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
-						request_data.fields.ds[i]['aggregate_interval'] = '1m';
-						request_data.fields.ds[i]['aggregate_function'] = '3';
-						request_data.fields.ds[i]['data_set_label'] = 'Average: ' + label;
-						break;
-					case 'sum':
-						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET;
-						request_data.fields.ds[i]['aggregate_interval'] = '1m';
-						request_data.fields.ds[i]['aggregate_function'] = '100';
-						request_data.fields.ds[i]['data_set_label'] = 'Sum: ' + label;
-						break;
-					case 'each':
-						request_data.fields.ds[i]['aggregate_grouping'] = CWidgetSvgGraphRME.AGGREGATE_GROUPING_EACH_ITEM;
-						request_data.fields.ds[i]['aggregate_interval'] = '1m';
-						request_data.fields.ds[i]['aggregate_function'] = '0';
-						request_data.fields.ds[i]['data_set_label'] = '';
-						break;
-					case 'original':
-						request_data.fields.ds[i]['aggregate_grouping'] = this._fields.ds[i]['aggregate_grouping'];
-						request_data.fields.ds[i]['aggregate_interval'] = this._fields.ds[i]['aggregate_interval'];
-						request_data.fields.ds[i]['aggregate_function'] = this._fields.ds[i]['aggregate_function'];
-						request_data.fields.ds[i]['data_set_label'] = this._fields.ds[i]['data_set_label'];
-						break;
-				}
+		for (let i = 0; i < request_data.fields.ds.length; i++) {
+			const ds = i + 1;
+			const baseLabel = this._fields.ds[i]['data_set_label'] || 'Dataset #' + ds;
+
+			if (this.#aggOverrideActive === 'original') {
+				request_data.fields.ds[i]['aggregate_grouping'] = this._fields.ds[i]['aggregate_grouping'];
+				request_data.fields.ds[i]['aggregate_interval'] = this._fields.ds[i]['aggregate_interval'];
+				request_data.fields.ds[i]['aggregate_function'] = this._fields.ds[i]['aggregate_function'];
+				request_data.fields.ds[i]['data_set_label']     = this._fields.ds[i]['data_set_label'];
+			}
+			else if (overrides[this.#aggOverrideActive]) {
+				const { grouping, interval, fn, prefix } = overrides[this.#aggOverrideActive];
+				request_data.fields.ds[i]['aggregate_grouping'] = grouping;
+				request_data.fields.ds[i]['aggregate_interval'] = interval;
+				request_data.fields.ds[i]['aggregate_function'] = fn;
+				request_data.fields.ds[i]['data_set_label']     = prefix ? prefix + baseLabel : '';
 			}
 		}
 
@@ -438,7 +417,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		trigger.innerHTML = `
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
 				viewBox="0 0 24 24" fill="none" stroke="currentColor"
-				stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
 				<line x1="4" y1="6" x2="20" y2="6"/>
 				<line x1="4" y1="12" x2="16" y2="12"/>
 				<line x1="4" y1="18" x2="12" y2="18"/>
@@ -1133,7 +1112,7 @@ class CWidgetSvgGraphRME extends CWidget {
 					border-radius: 2px;
 				}
 				.graph-display-trigger.active {
-					color: #2b6bd4;
+					color: #1f99e0;
 				}
 				.graph-display-menu {
 					list-style: none;

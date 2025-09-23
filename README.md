@@ -1,6 +1,8 @@
 # zabbix-widgets-graph
 An enhanced Graph Widget for the Zabbix Dashboard
 
+[See the video demonstration!](https://www.youtube.com/watch?v=RD2ubhf-Vas)
+
 # Graph Widget User Guide
 
 This widget extends the standard graph functionality with a set of interactive features designed to make data exploration easier and more flexible.  

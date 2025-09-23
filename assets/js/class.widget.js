@@ -931,12 +931,12 @@ class CWidgetSvgGraphRME extends CWidget {
 	}
 
 	_getGraphLine(metric) {
-		if (metric.includes('\\')) {
-			const correctedMetric = metric.replace(/\\/g, '\\\\');
-			metric = correctedMetric;
-		}
+		const correctedMetric = metric
+			.replace(/\\/g, '\\\\')
+			.replace(/([\n\r\t\f\v])/g, ' ')
+			.replace(/"/g, '\\"');
 
-		return this._svg.querySelector(`g[data-metric="${metric}"]`);
+		return this._svg.querySelector(`g[data-metric="${correctedMetric}"]`);
 	}
 
 	_getAllGraphElements() {

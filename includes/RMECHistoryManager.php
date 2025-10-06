@@ -1217,9 +1217,16 @@ class RMECHistoryManager {
 		}
 
 		if (array_key_exists(ZBX_HISTORY_SOURCE_SQL, $grouped_items)) {
-			$results += $this->getAggregatedValuesFromSql($grouped_items[ZBX_HISTORY_SOURCE_SQL], $function, $time_from,
-				$time_to
-			);
+			$sql_items = $grouped_items[ZBX_HISTORY_SOURCE_SQL];
+			$count = count($sql_items);
+
+			$chunk_size = 2500;
+			$num_chunks = ceil($count / $chunk_size);
+
+			for ($i = 0; $i < $num_chunks; $i++) {
+				$chunk = array_slice($sql_items, $i * $chunk_size, $chunk_size);
+				$results += $this->getAggregatedValuesFromSql($chunk, $function, $time_from, $time_to);
+			}
 		}
 
 		return $results;

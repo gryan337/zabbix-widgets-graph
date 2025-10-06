@@ -495,10 +495,30 @@ class RMECSvgGraph extends CSvg {
 		}
 	}
 
+	private function hasStackedOption(): bool {
+		foreach ($this->metrics as $metric) {
+			if (isset($metric['options']['stacked']) && $metric['options']['stacked'] == SVG_GRAPH_STACKED_ON) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private function calculateStackedPoints(): void {
 		$surface = [];
+		$anyStacked = $this->hasStackedOption();
 
 		foreach ($this->metrics as $index => $metric) {
+			if ($anyStacked && in_array($metric['name'], $this->lines_hidden_js_override)) {
+				foreach ($this->points[$index] as &$timestamps) {
+					foreach ($timestamps as &$values) {
+						$values['min'] = null;
+						$values['max'] = null;
+						$values['avg'] = null;
+					}
+				}
+			}
+
 			if (!in_array($metric['options']['type'], [SVG_GRAPH_TYPE_LINE, SVG_GRAPH_TYPE_STAIRCASE])
 					|| $metric['options']['stacked'] != SVG_GRAPH_STACKED_ON
 					|| !array_key_exists($index, $this->points)) {
@@ -514,16 +534,6 @@ class RMECSvgGraph extends CSvg {
 					break;
 				default:
 					$approximation = 'avg';
-			}
-
-			if (in_array($metric['name'], $this->lines_hidden_js_override)) {
-				foreach ($this->points[$index] as &$timestamps) {
-					foreach ($timestamps as &$values) {
-						$values['min'] = null;
-						$values['max'] = null;
-						$values['avg'] = null;
-					}
-				}
 			}
 
 			if (!array_key_exists($metric['data_set'], $surface)) {

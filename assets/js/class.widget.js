@@ -328,7 +328,7 @@ class CWidgetSvgGraphRME extends CWidget {
 
 			let rawValues = {};
 			initialValues.forEach(value => {
-				rawValues = this._getValuesAndUnitsForMetric(rawValues, value);
+				rawValues = this._getValuesAndUnitsForMetric(rawValues, value, false, true);
 			});
 			this._initialOverrides = {...this._selected_metric_overrides};
 		}
@@ -841,7 +841,7 @@ class CWidgetSvgGraphRME extends CWidget {
 	}
 
 	_shouldUpdate(graphLine, prev) {
-		if (this._fields.ds[graphLine.getAttribute('data-index')].stacked) return true;
+		if (this._fields.ds.some(obj => obj.stacked === '1')) return true;
 		const isLeft = graphLine.getAttribute('data-axisy') === CWidgetSvgGraphRME.AXIS_LEFT;
 		const prefix = isLeft ? 'l' : 'r';
 		const minKey = isLeft ? 'lefty_min' : 'righty_min';
@@ -1019,10 +1019,10 @@ class CWidgetSvgGraphRME extends CWidget {
 		rawValues = this._getValuesAndUnitsForMetric(rawValues, metric);
 	}
 
-	_getValuesAndUnitsForMetric(rawValues, metric, hasMixedUnits = false) {
+	_getValuesAndUnitsForMetric(rawValues, metric, hasMixedUnits = false, initial = false) {
 		const graphLine = this._getGraphLine(metric);
 		if (!graphLine) return rawValues;
-		if (this._fields.ds[graphLine.getAttribute('data-index')].stacked) {
+		if (!initial && this._fields.ds[graphLine.getAttribute('data-index')].stacked) {
 			this.initMetricOverridesSide(graphLine.getAttribute('data-axisy'));
 			return rawValues;
 		}

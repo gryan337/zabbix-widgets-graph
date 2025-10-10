@@ -5,7 +5,7 @@
 	"name": "RME Graph",
 	"namespace": "RMESvgGraph",
 	"version": "1.0",
-	"author": "Ryan Eberly",
+	"author": "RME",
 	"description": "A more advanced implementation of the Zabbix SvgGraph widget",
 	"widget": {
 		"js_class": "CWidgetSvgGraphRME",

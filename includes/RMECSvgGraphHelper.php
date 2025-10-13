@@ -240,8 +240,22 @@ class RMECSvgGraphHelper {
 				'limit' => $max_metrics
 			];
 
+			$transformed_keys = array();
+
+			foreach ($data_set['items'] as $i => $item) {
+				if (strpos($item, 'key=') === 0) {
+					$key_part = substr($item, 4);
+					$transformed_keys[] = $key_part;
+					unset($data_set['items'][$i]);
+				}
+			}
+
 			if ($resolve_macros) {
 				$options['output'][] = 'name_resolved';
+
+				if ($transformed_keys) {
+					$options['search']['key_'] = $transformed_keys;
+				}
 
 				if ($templateid === '') {
 					$options['search']['name_resolved'] = self::processPattern($data_set['items']);
@@ -252,6 +266,9 @@ class RMECSvgGraphHelper {
 			}
 			else {
 				$options['output'][] = 'name';
+				if ($transformed_keys) {
+					$options['search']['key_'] = $transformed_keys;
+				}
 				$options['search']['name'] = self::processPattern($data_set['items']);
 			}
 

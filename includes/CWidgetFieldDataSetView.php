@@ -131,7 +131,7 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 					'name' => $field_name.'['.$row_num.'][items][]',
 					'object_name' => 'items',
 					'data' => $value['items'],
-					'placeholder' => _('item patterns'),
+					'placeholder' => _('item patterns or item keys using format of \'key=<item_key>\''),
 					'wildcard_allowed' => 1,
 					'popup' => [
 						'parameters' => [
@@ -169,7 +169,7 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 					'name' => $field_name.'['.$row_num.'][items][]',
 					'object_name' => 'items',
 					'data' => $value['items'],
-					'placeholder' => _('item patterns'),
+					'placeholder' => _('item patterns or item keys using format of \'key=<item_key>\''),
 					'wildcard_allowed' => 1,
 					'popup' => [
 						'parameters' => [

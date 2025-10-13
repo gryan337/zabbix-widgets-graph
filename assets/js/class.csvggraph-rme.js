@@ -144,7 +144,7 @@
 		}
 
 		if (DateUnits.includes(configured_units)) {
-			v = checkIfDate(v);
+			v = _checkIfDate(v);
 			return v;
 		}
 

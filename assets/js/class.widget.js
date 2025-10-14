@@ -207,30 +207,31 @@ class CWidgetSvgGraphRME extends CWidget {
 			request_data.fields.lines_hidden_js_override = [...this.hiddenLines.keys()];
 		}
 
-		const overrides = {
-			min:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '1',   prefix: 'Minimum: ' },
-			max:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '2',   prefix: 'Maximum: ' },
-			avg:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '3',   prefix: 'Average: ' },
-			sum:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', fn: '100', prefix: 'Sum: ' },
-			each: { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_EACH_ITEM, interval: '10m', fn: '0', prefix: '' }
-		};
-
 		for (let i = 0; i < request_data.fields.ds.length; i++) {
-			const ds = i + 1;
-			const baseLabel = this._fields.ds[i]['data_set_label'] || 'Dataset #' + ds;
+			const original = this._fields.ds[i];
+			const target = request_data.fields.ds[i];
+			const dsLabel = original.dataset_label || `Dataset #${i + 1}`;
 
-			if (this.#aggOverrideActive === 'original') {
-				request_data.fields.ds[i]['aggregate_grouping'] = this._fields.ds[i]['aggregate_grouping'];
-				request_data.fields.ds[i]['aggregate_interval'] = this._fields.ds[i]['aggregate_interval'];
-				request_data.fields.ds[i]['aggregate_function'] = this._fields.ds[i]['aggregate_function'];
-				request_data.fields.ds[i]['data_set_label']     = this._fields.ds[i]['data_set_label'];
-			}
-			else if (overrides[this.#aggOverrideActive]) {
-				const { grouping, interval, fn, prefix } = overrides[this.#aggOverrideActive];
-				request_data.fields.ds[i]['aggregate_grouping'] = grouping;
-				request_data.fields.ds[i]['aggregate_interval'] = interval;
-				request_data.fields.ds[i]['aggregate_function'] = fn;
-				request_data.fields.ds[i]['data_set_label']     = prefix ? prefix + baseLabel : '';
+			const overrides = {
+				min:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', func: '1',   label: `Minimum: ${dsLabel}` },
+				max:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', func: '2',   label: `Maximum: ${dsLabel}` },
+				avg:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', func: '3',   label: `Average: ${dsLabel}` },
+				sum:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', func: '100', label: `Sum: ${dsLabel}` },
+				each: { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_EACH_ITEM, interval: '10m', func: '0', label: '' },
+				original: {
+					grouping: original.aggregate_grouping,
+					interval: original.interval,
+					func: original.aggregate_function,
+					label: original.data_set_label
+				}
+			};
+
+			const override = overrides[this.#aggOverrideActive];
+			if (override) {
+				target.aggregate_grouping = override.grouping;
+				target.aggregate_interval = override.interval;
+				target.aggregate_function = override.func;
+				target.data_set_label = override.label;
 			}
 		}
 

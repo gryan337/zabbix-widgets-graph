@@ -321,7 +321,9 @@ class CWidgetSvgGraphRME extends CWidget {
 		this._activateGraph();
 		this.legendItems = this._body.querySelectorAll('.svg-graph-legend-item');
 
-		if (Object.keys(this._initialOverrides).length === 0 || this._areAllValuesNull(this._initialOverrides)) {
+		if (Object.keys(this._initialOverrides).length === 0 ||
+				this._areAllValuesNull(this._initialOverrides) ||
+				this.isFieldsReferredDataUpdated()) {
 			const initialValues = new Set(
 				Array.from(this.legendItems).map(l => l.textContent)
 			);

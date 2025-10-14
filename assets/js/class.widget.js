@@ -210,7 +210,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		for (let i = 0; i < request_data.fields.ds.length; i++) {
 			const original = this._fields.ds[i];
 			const target = request_data.fields.ds[i];
-			const dsLabel = original.dataset_label || `Dataset #${i + 1}`;
+			const dsLabel = original.data_set_label || `Dataset #${i + 1}`;
 
 			const overrides = {
 				min:  { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_DATASET, interval: '10m', func: '1',   label: `Minimum: ${dsLabel}` },

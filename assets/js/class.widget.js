@@ -1572,9 +1572,12 @@ class CWidgetSvgGraphRME extends CWidget {
 			}
 
 			if (this._isNumeric(numValue)) {
+				var multiplier;
 				if (units_in_display !== undefined) {
 					if (original_units === 'B') {
 						var multiplier = this.#BMultiplier.get(units_in_display.charAt(0));
+					}
+					else if (original_units === units_in_display || original_units.startsWith('!')) {
 					}
 					else {
 						var multiplier = this.#Multiplier.get(units_in_display.charAt(0));

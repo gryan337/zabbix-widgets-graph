@@ -655,6 +655,7 @@ class CWidgetSvgGraphRME extends CWidget {
 							this._setLegendOpacity();
 						}
 					}
+					this._reorderGraphElements();
 
 					const previousSelectedMetricOverrides = {...this._selected_metric_overrides};
 
@@ -706,7 +707,6 @@ class CWidgetSvgGraphRME extends CWidget {
 
 						const graphLine = this._getGraphLine(metric);
 						this.hiddenLines.set(metric, graphLine);
-
 						this.hiddenLines.forEach((g, m) => {
 							if (g != null) {
 								g.style.display = 'none';
@@ -736,6 +736,8 @@ class CWidgetSvgGraphRME extends CWidget {
 				else {
 					this._showOnly(metric);
 				}
+
+				this._reorderGraphElements();
 			});
 		});
 
@@ -938,7 +940,6 @@ class CWidgetSvgGraphRME extends CWidget {
 			.replace(/\\/g, '\\\\')
 			.replace(/([\n\r\t\f\v])/g, ' ')
 			.replace(/"/g, '\\"');
-
 		return this._svg.querySelector(`g[data-metric="${correctedMetric}"]`);
 	}
 
@@ -957,15 +958,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		item.style.opacity = '0.4';
 	}
 
-	_selectMetric(item, metric) {
-		this._selected_metrics.add(metric);
-		const hidden = this.hiddenLines.get(metric);
-		if (hidden) {
-			this._svg.appendChild(hidden);
-			hidden.style.display = 'none';
-			this.hiddenLines.delete(metric);
-		}
-
+	_reorderGraphElements() {
 		const allGraphElements = this._getAllGraphElements();
 
 		const arrayAllGraphElements = Array.from(allGraphElements);
@@ -982,6 +975,16 @@ class CWidgetSvgGraphRME extends CWidget {
 		arrayAllGraphElements.forEach((g, index) => {
 			this._svg.appendChild(g);
 		});
+	}
+
+	_selectMetric(item, metric) {
+		this._selected_metrics.add(metric);
+		const hidden = this.hiddenLines.get(metric);
+		if (hidden) {
+			this._svg.appendChild(hidden);
+			hidden.style.display = 'none';
+			this.hiddenLines.delete(metric);
+		}
 
 		item.style.opacity = '1';
 	}
@@ -1244,22 +1247,23 @@ class CWidgetSvgGraphRME extends CWidget {
 	}
 
 	_showTooltip(text, event, tooltip) {
-		const padding = 10;
+		const paddingDown = 25;
+		const paddingRight = 10;
 		tooltip.textContent = text;
 		tooltip.style.opacity = '1';
 		tooltip.style.left = '-9999px';
 		tooltip.style.top = '-9999px';
 		const tooltipRect = tooltip.getBoundingClientRect();
 
-		let left = event.pageX + padding;
-		let top = event.pageY + padding;
+		let left = event.pageX + paddingRight;
+		let top = event.pageY + paddingDown;
 
 		if (left + tooltipRect.width > window.innerWidth) {
-			left = window.innerWidth - tooltipRect.width - padding;
+			left = window.innerWidth - tooltipRect.width - paddingRight;
 		}
 
 		if (top + tooltipRect.height > window.innerHeight) {
-			top = window.innerHeight - tooltipRect.height - padding;
+			top = window.innerHeight - tooltipRect.height - paddingDown;
 		}
 
 		tooltip.style.left = `${left}px`;
@@ -1424,7 +1428,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		}
 
 		return x;
-        }
+    }
 
 	_isUptime(x) {
 		var uptime_reone = /^([0-9]+)\s*(days?,)\s*([0-9]{2}):([0-9]{2}):([0-9]{2})/g;
@@ -1507,7 +1511,7 @@ class CWidgetSvgGraphRME extends CWidget {
 
 	_isNumeric(x) {
 		return !isNaN(parseFloat(x)) && isFinite(x);
-        }
+    }
 
 	_checkIfDate(x) {
 
@@ -1524,7 +1528,7 @@ class CWidgetSvgGraphRME extends CWidget {
 
 		return x;
 
-        }
+    }
 
 	_getNumValue(x, units = '') {
 		let original_units = units;

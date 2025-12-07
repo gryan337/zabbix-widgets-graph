@@ -322,18 +322,30 @@ class CWidgetSvgGraphRME extends CWidget {
 		this._activateGraph();
 		this.legendItems = this._body.querySelectorAll('.svg-graph-legend-item');
 
+		const hasActiveSelections = this._selected_metrics.size > 0;
+		const preservedOverrides = hasActiveSelections ? {...this._selected_metrics_overrides} : null;
+
 		if (Object.keys(this._initialOverrides).length === 0 ||
 				this._areAllValuesNull(this._initialOverrides) ||
 				this.isFieldsReferredDataUpdated()) {
-			const initialValues = new Set(
-				Array.from(this.legendItems).map(l => l.textContent)
-			);
+			if (!hasActiveSelections) {
+				const initialValues = new Set(
+					Array.from(this.legendItems).map(l => l.textContent)
+				);
 
-			let rawValues = {};
-			initialValues.forEach(value => {
-				rawValues = this._getValuesAndUnitsForMetric(rawValues, value, false, true);
-			});
-			this._initialOverrides = {...this._selected_metric_overrides};
+				let rawValues = {};
+				initialValues.forEach(value => {
+					this._getValuesAndUnitsForMetric(rawValues, value, false, true);
+				});
+				this._initialOverrides = {...this._selected_metric_overrides};
+			}
+			else {
+				this._initialOverrides = {...preservedOverrides};
+			}
+
+			if (hasActiveSelections && preservedOverrides) {
+				this._selected_metric_overrides = {...preservedOverrides};
+			}
 		}
 
 		const completeRefresh = this._setupLegendClickHandlers();
@@ -1044,38 +1056,63 @@ class CWidgetSvgGraphRME extends CWidget {
 			this._selected_metric_overrides[axis === 'left' ? 'lunits' : 'runits'] = graphLine.getAttribute('data-units') || '';
 		}
 
-		const labeledElements = graphLine.querySelectorAll('[label]');
-		labeledElements.forEach(el => {
-			const label = el.getAttribute('label');
-			if (label) {
-				if (!rawValues[axis]) {
-					rawValues[axis] = [...label.split(',').map(s => s.trim())];
-				}
-				else {
-					rawValues[axis].push(...label.split(',').map(s => s.trim()));
-				}
-			}
-		});
+		const dataMax = parseFloat(graphLine.getAttribute('data-max'));
+		const dataMin = parseFloat(graphLine.getAttribute('data-min'));
+
+		if (!rawValues[axis]) {
+			rawValues[axis] = [];
+		}
+		rawValues[axis].push(dataMax, dataMin);
+
+		const safeMax = (arr) => {
+			if (arr.length === 0) return null;
+			return arr.reduce((max, val) => val > max ? val : max, arr[0]);
+		};
+
+		const safeMin = (arr) => {
+			if (arr.length === 0) return null;
+			return arr.reduce((min, val) => val < min ? val : min, arr[0]);
+		};
 
 		for (const key in rawValues) {
 			let rv = rawValues[key];
+			const newValues = rv.filter(v => v !== null && !isNaN(v) && isFinite(v));
+
 			if (key === 'left') {
-				const newValues = rv.map(x => this._getNumValue(x, this._selected_metric_overrides.lunits));
-				this._selected_metric_overrides.lmax = (this._fields.lefty_max !== '')
-					? parseFloat(this._fields.lefty_max)
-					: Math.max(...newValues);
-				this._selected_metric_overrides.lmin = (this._fields.lefty_min !== '')
-					? parseFloat(this._fields.lefty_min)
-					: Math.min(...newValues);
+				if (newValues.length > 0) {
+					this._selected_metric_overrides.lmax = (this._fields.lefty_max !== '')
+						? parseFloat(this._fields.lefty_max)
+						: safeMax(newValues);
+					this._selected_metric_overrides.lmin = (this._fields.lefty_min !== '')
+						? parseFloat(this._fields.lefty_min)
+						: safeMin(newValues);
+				}
+				else {
+					this._selected_metric_overrides.lmax = (this._fields.lefty_max !== '')
+						? parseFloat(this._fields.lefty_max)
+						: (this._selected_metric_overrides.lmax || 1);
+					this._selected_metric_overrides.lmin = (this._fields.lefty_min !== '')
+						? parseFloat(this._fields.lefty_min)
+						: (this._selected_metric_overrides.lmin || 0);
+				}
 			}
 			else {
-				const newValues = rv.map(x => this._getNumValue(x, this._selected_metric_overrides.runits));
-				this._selected_metric_overrides.rmax = (this._fields.righty_max !== '')
-					? parseFloat(this._fields.righty_max)
-					: Math.max(...newValues);
-				this._selected_metric_overrides.rmin = (this._fields.righty_min !== '')
-					? parseFloat(this._fields.righty_min)
-					: Math.min(...newValues);
+				if (newValues.length > 0) {
+					this._selected_metric_overrides.rmax = (this._fields.righty_max !== '')
+						? parseFloat(this._fields.righty_max)
+						: safeMax(newValues);
+					this._selected_metric_overrides.rmin = (this._fields.righty_min !== '')
+						? parseFloat(this._fields.righty_min)
+						: safeMin(newValues);
+				}
+				else {
+					this._selected_metric_overrides.rmax = (this._fields.righty_max !== '')
+						? parseFloat(this._fields.righty_max)
+						: (this._selected_metric_overrides.rmax || 1);
+					this._selected_metric_overrides.rmin = (this._fields.righty_min !== '')
+						? parseFloat(this._fields.righty_min)
+						: (this._selected_metric_overrides.rmin || 0);
+				}
 			}
 		}
 
@@ -1428,7 +1465,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		}
 
 		return x;
-    }
+	}
 
 	_isUptime(x) {
 		var uptime_reone = /^([0-9]+)\s*(days?,)\s*([0-9]{2}):([0-9]{2}):([0-9]{2})/g;
@@ -1511,7 +1548,7 @@ class CWidgetSvgGraphRME extends CWidget {
 
 	_isNumeric(x) {
 		return !isNaN(parseFloat(x)) && isFinite(x);
-    }
+	}
 
 	_checkIfDate(x) {
 
@@ -1528,7 +1565,7 @@ class CWidgetSvgGraphRME extends CWidget {
 
 		return x;
 
-    }
+	}
 
 	_getNumValue(x, units = '') {
 		let original_units = units;

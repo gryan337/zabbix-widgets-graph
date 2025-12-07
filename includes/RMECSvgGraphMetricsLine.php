@@ -125,6 +125,8 @@ class RMECSvgGraphMetricsLine extends CSvgGroup {
 			->setAttribute('data-units', $this->metric['units'])
 			->setAttribute('data-axisy', $this->options['axisy'])
 			->setAttribute('data-index', $this->metric['data_set'])
+			->setAttribute('data-max', max(array_column($this->metric['points'], 'max')))
+			->setAttribute('data-min', min(array_column($this->metric['points'], 'min')))
 			->draw();
 
 		return parent::toString($destroy);

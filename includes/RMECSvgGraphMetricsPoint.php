@@ -21,6 +21,8 @@ class RMECSvgGraphMetricsPoint extends CSvgGroup {
 	private $item_name;
 	private $units;
 	private $data_set;
+	private $data_min;
+	private $data_max;
 
 	protected $options;
 
@@ -32,6 +34,8 @@ class RMECSvgGraphMetricsPoint extends CSvgGroup {
 		$this->item_name = $metric['name'];
 		$this->units = $metric['units'];
 		$this->data_set = $metric['data_set'];
+		$this->data_min = min(array_column($metric['points'], 'min'));
+		$this->data_max = max(array_column($metric['points'], 'max'));
 
 		$this->options = $metric['options'] + [
 			'color' => RMECSvgGraph::SVG_GRAPH_DEFAULT_COLOR,
@@ -75,6 +79,8 @@ class RMECSvgGraphMetricsPoint extends CSvgGroup {
 			->setAttribute('data-units', $this->units)
                         ->setAttribute('data-index', $this->data_set)
                         ->setAttribute('data-axisy', $this->options['axisy'])
+                        ->setAttribute('data-max', $this->data_max)
+                        ->setAttribute('data-min', $this->data_min)
 			->draw();
 
 		return parent::toString($destroy);

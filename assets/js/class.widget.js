@@ -172,12 +172,7 @@ class CWidgetSvgGraphRME extends CWidget {
 				if (overrideVal === null) continue;
 				if (currentVal !== '') continue;
 
-				if (mainFieldKey.includes('max')) {
-					request_data.fields[overrideFieldKey] = String(overrideVal * CWidgetSvgGraphRME.MAX_MULTIPLIER);
-				}
-				else {
-					request_data.fields[overrideFieldKey] = String(overrideVal * CWidgetSvgGraphRME.MIN_MULTIPLIER);
-				}
+				request_data.fields[overrideFieldKey] = String(overrideVal);
 			}
 
 			if (this._selected_metric_overrides.lunits !== null) {
@@ -323,7 +318,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		this.legendItems = this._body.querySelectorAll('.svg-graph-legend-item');
 
 		const hasActiveSelections = this._selected_metrics.size > 0;
-		const preservedOverrides = hasActiveSelections ? {...this._selected_metrics_overrides} : null;
+		const preservedOverrides = hasActiveSelections ? {...this._selected_metric_overrides} : null;
 
 		if (Object.keys(this._initialOverrides).length === 0 ||
 				this._areAllValuesNull(this._initialOverrides) ||
@@ -711,38 +706,10 @@ class CWidgetSvgGraphRME extends CWidget {
 					}
 					else {
 						this._selected_metrics.clear();
-						if (this._fields.ds.some(obj => obj.stacked === '1')) {
-							this._selected_metric_overrides = {...this._initialOverrides};
-							this._startUpdating();
-							return;
-						}
-
-						const graphLine = this._getGraphLine(metric);
-						this.hiddenLines.set(metric, graphLine);
-						this.hiddenLines.forEach((g, m) => {
-							if (g != null) {
-								g.style.display = 'none';
-								this._svg.appendChild(g);
-							}
-						});
-
-						const clonedHiddenLines = new Map(this.hiddenLines);
-
 						this.hiddenLines.clear();
-						this._setLegendOpacity(true);
-
-						if (!this._overridesEqualityCheck(this._selected_metric_overrides, this._initialOverrides)) {
-							this._selected_metric_overrides = {...this._initialOverrides};
-							this._startUpdating();
-						}
-						else {
-							clonedHiddenLines.forEach(g => {
-								if (g != null) {
-									g.style.display = '';
-								}
-							});
-							this._selected_metric_overrides = {...this._initialOverrides};
-						}
+						this.initMetricOverrides();
+						this._startUpdating();
+						return;
 					}
 				}
 				else {

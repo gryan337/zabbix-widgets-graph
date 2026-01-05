@@ -1049,9 +1049,17 @@ class RMECSvgGraphHelper {
 			}
 		}
 
+		$colorIndex = 0;
 		foreach ($metrics as &$metric) {
 			if ($metric['options']['aggregate_function'] == AGGREGATE_NONE || !$metric['items']) {
 				continue;
+			}
+
+			if ($metric['options']['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_SINGLE_ITEM &&
+					isset($metric['options']['color']) &&
+					($metric['options']['color'] === '' || $metric['options']['color'] === '#')) {
+				$metric['options']['color'] = '#' . WidgetView::COLOR_BLIND_FRIENDLY_PALETTE[$colorIndex % count(WidgetView::COLOR_BLIND_FRIENDLY_PALETTE)];
+				$colorIndex++;
 			}
 
 			$historyManager = new \Modules\RMESvgGraph\Includes\RMECHistoryManager();

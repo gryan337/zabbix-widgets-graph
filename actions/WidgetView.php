@@ -24,6 +24,13 @@ class WidgetView extends CControllerDashboardWidgetView {
 	public const SVG_GRAPH_SUPPRESS_ZEROS_TRUE = 1;
 	public const SVG_GRAPH_SUPPRESS_ZEROS_FALSE = 0;
 
+	public const COLOR_BLIND_FRIENDLY_PALETTE = [
+		'377EB8', 'FF7F00', '4DAF4A', 'F781BF', 'A65628', '984EA3',
+		'999999', 'E41A1C', 'DEDE00', '17BECF', '8C564B', 'FFCC80',
+		'66C2A5', 'FC8D62', '8DA0CB', 'E78AC3', 'A6D854', 'FFD92F',
+		'E5C494', 'B3B3B3', '1B9E77', 'D95F02', '7570B3', 'E7298A'
+	];
+
 	protected function init(): void {
 		parent::init();
 
@@ -156,46 +163,45 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$newItemids = [];
 			$newColors = [];
 
-			$hasAny = false;
 			foreach ($ds['itemids'] as $index => $itemidEntry) {
-				$itemids = json_decode($itemidEntry, true);
-				if (!is_array($itemids)) {
-					continue;
+				if (is_string($itemidEntry) && strpos($itemidEntry, '[') === 0) {
+					$itemids = json_decode($itemidEntry, true);
+					if (!is_array($itemids)) {
+						continue;
+					}
+
+					$isSingleItem = (count($itemids) === 1);
+					$fallbackColor = isset($ds['color'][$index]) ? $ds['color'][$index] : '';
+
+					$colorIndex = 0;
+					foreach ($itemids as $itemid) {
+						$newItemids[] = $itemid['itemid'];
+
+						if (isset($itemid['color']) && $itemid['color'] !== '') {
+							// Has a non-empty color, use it
+							$newColors[] = strtoupper($itemid['color']);
+						}
+						elseif (isset($itemid['color']) && $itemid['color'] === '' && $isSingleItem) {
+							// Empty string with single item - use configured fallback
+							$newColors[] = $fallbackColor;
+						}
+						elseif ($ds['aggregate_function'] == AGGREGATE_NONE) {
+							$newColors[] = self::COLOR_BLIND_FRIENDLY_PALETTE[$colorIndex % count(self::COLOR_BLIND_FRIENDLY_PALETTE)];
+							$colorIndex++;
+						}
+						else {
+							// Empty string with multiple items, or missing color key - needs palette assignment
+							$newColors[] = $itemid['color'];
+						}
+					}
 				}
-
-				$hasAny = true;
-
-				$typeValue = $ds['type'][$index] ?? 0;
-				$currentColors = [];
-				$currentItemIds = [];
-
-				foreach ($itemids as $itemid) {
-					$currentItemIds[] = $itemid['itemid'];
-					if (!empty($itemid['color'])) {
-						$currentColors[] = strtoupper($itemid['color']);
-					}
-					else {
-						$currentColors[] = null;
-					}
-				}
-
-				$colors = $this->getColorblindFriendlyPalette(count($currentItemIds));
-				$availableColors = $this->reorderColorsAvoidAdjacentSimilarity($colors);
-
-				foreach ($currentItemIds as $i => $itemid) {
-					if ($currentColors[$i] !== null) {
-						$finalColor = $currentColors[$i];
-					}
-					else {
-						$finalColor = array_shift($availableColors);
-					}
-
-					$newItemids[] = $itemid;
-					$newColors[] = $finalColor;
+				else {
+					$newItemids[] = $itemidEntry;
+					$newColors[] = isset($ds['color'][$index]) ? $ds['color'][$index] : '';
 				}
 			}
 
-			if ($hasAny) {
+			if (!empty($newItemids)) {
 				$ds['itemids'] = $newItemids;
 				$ds['color'] = $newColors;
 			}
@@ -246,106 +252,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 
 		return $info;
-	}
-
-	private function getColorblindFriendlyPalette(int $count): array {
-		$palette = [
-			'377EB8', 'FF7F00', '4DAF4A', 'F781BF', 'A65628', '984EA3', '999999', 'E41A1C', 'DEDE00', '17BECF', '8C564B', 'FFCC80'
-		];
-
-		while (count($palette) < $count) {
-			$palette = array_merge($palette, $palette);
-		}
-
-		return array_slice($palette, 0, $count);
-	}
-
-	private function reorderColorsAvoidAdjacentSimilarity(array $colors): array {
-		if (count($colors) <= 2) {
-			return $colors;
-		}
-
-		$labColors = array_map(fn($hex) => $this->hexToLab($hex), $colors);
-
-		$ordered = [];
-		$usedIndexes = [];
-
-		$ordered[] = $colors[0];
-		$usedIndexes[] = 0;
-
-		while (count($ordered) < count($colors)) {
-			$lastIndex = end($usedIndexes);
-			$lastLab = $labColors[$lastIndex];
-
-			$maxDist = -1;
-			$nextIndex = null;
-
-			foreach ($colors as $i => $color) {
-				if (in_array($i, $usedIndexes, true)) {
-					continue;
-				}
-
-				$dist = $this->labDistance($lastLab, $labColors[$i]);
-				if ($dist > $maxDist) {
-					$maxDist = $dist;
-					$nextIndex = $i;
-				}
-			}
-
-			if ($nextIndex === null) {
-				break;
-			}
-
-			$ordered[] = $colors[$nextIndex];
-			$usedIndexes[] = $nextIndex;
-		}
-
-		return $ordered;
-	}
-
-	private function hexToLab(string $hex): array {
-		$hex = ltrim($hex, '#');
-		if (strlen($hex) === 3) {
-			$r = hexdec(str_repeat($hex[0], 2));
-			$g = hexdec(str_repeat($hex[1], 2));
-			$b = hexdec(str_repeat($hex[2], 2));
-		}
-		else {
-			$r = hexdec(substr($hex, 0, 2));
-			$g = hexdec(substr($hex, 2, 2));
-			$b = hexdec(substr($hex, 4, 2));
-		}
-
-		[$r, $g, $b] = array_map(function ($c) {
-			$c = $c / 255;
-			return ($c > 0.04045) ? pow(($c + 0.055) / 1.055, 2.4) : $c / 12.92;
-		}, [$r, $g, $b]);
-
-		$x = $r * 0.4124 + $g * 0.3576 + $b * 0.1805;
-		$y = $r * 0.2126 + $g * 0.7152 + $b * 0.0722;
-		$z = $r * 0.0193 + $g * 0.1192 + $b * 0.9505;
-
-		$xr = $x / 0.95047;
-		$yr = $y / 1.00000;
-		$zr = $z / 1.08883;
-
-		$fx = ($xr > 0.008856) ? pow($xr, 1 / 3) : (7.787 * $xr) + (16 / 116);
-		$fy = ($yr > 0.008856) ? pow($yr, 1 / 3) : (7.787 * $yr) + (16 / 116);
-		$fz = ($zr > 0.008856) ? pow($zr, 1 / 3) : (7.787 * $zr) + (16 / 116);
-
-		$l = (116 * $fy) - 16;
-		$a = 500 * ($fx - $fy);
-		$b = 200 * ($fy - $fz);
-
-		return [$l, $a, $b];
-	}
-
-	private function labDistance(array $lab1, array $lab2): float {
-		return sqrt(
-			pow($lab1[0] - $lab2[0], 2) +
-			pow($lab1[1] - $lab2[1], 2) +
-			pow($lab1[2] - $lab2[2], 2)
-		);
 	}
 
 }

@@ -215,7 +215,7 @@ class CWidgetSvgGraphRME extends CWidget {
 				each: { grouping: CWidgetSvgGraphRME.AGGREGATE_GROUPING_EACH_ITEM, interval: '10m', func: '0', label: '' },
 				original: {
 					grouping: original.aggregate_grouping,
-					interval: original.interval,
+					interval: original.aggregate_interval,
 					func: original.aggregate_function,
 					label: original.data_set_label
 				}

@@ -56,7 +56,10 @@ class RMECSvgGraphHelper {
 		// Find which metrics will be shown in graph and calculate time periods and display options.
 		self::getMetricsPattern($metrics, $options['data_sets'], $options['templateid'], $options['override_hostid']);
 		self::getMetricsItems($metrics, $options['data_sets'], $options['templateid'], $options['override_hostid']);
-		CGraphHelper::calculateMetricsDelay($metrics);
+		if ((version_compare(ZABBIX_VERSION, '7.0.20', '>=') && version_compare(ZABBIX_VERSION, '7.2.0', '<'))
+			|| (version_compare(ZABBIX_VERSION, '7.4.4', '>='))) {
+			CGraphHelper::calculateMetricsDelay($metrics);
+		}
 		self::sortByDataset($metrics);
 		// Apply overrides for previously selected $metrics.
 		self::applyOverrides($metrics, $options['templateid'], $options['override_hostid'], $options['overrides']);
@@ -69,8 +72,11 @@ class RMECSvgGraphHelper {
 		self::getGraphDataSource($metrics, $errors, $options['data_source'], $width);
 		// Load Data for each metric.
 		self::getMetricsData($metrics, $width);
-		// Additional data processing for items with the preprocessing step "Discard unchanged".
-		self::populateValuesBetweenHeartbeats($metrics, $width);
+		if ((version_compare(ZABBIX_VERSION, '7.0.20', '>=') && version_compare(ZABBIX_VERSION, '7.2.0', '<'))
+			|| (version_compare(ZABBIX_VERSION, '7.4.4', '>='))) {
+			// Additional data processing for items with the preprocessing step "Discard unchanged".
+			self::populateValuesBetweenHeartbeats($metrics, $width);
+		}
 		// Load aggregated Data for each dataset.
 		self::getMetricsAggregatedData($metrics, $width, $options['data_sets'], $options['legend']['show_aggregation']);
 

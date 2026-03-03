@@ -8,7 +8,7 @@ use CButton,
 	CButtonLink,
 	CCheckBox,
 	CCol,
-	CColorPicker,
+	CColor,
 	CDiv,
 	CFormField,
 	CFormGrid,
@@ -32,11 +32,9 @@ use CButton,
 	CTemplateTag,
 	CTextBox,
 	CVar,
-	CWidgetFieldMultiSelectOverrideHostView,
 	CWidgetFieldView;
 
 use Zabbix\Widgets\CWidgetField;
-use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectOverrideHost;
 
 class CWidgetFieldDataSetView extends CWidgetFieldView {
 
@@ -206,11 +204,8 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 				]))->addClass('js-items-multiselect');
 			}
 
-			$dataset_head[] = (new CColorPicker($field_name.'['.$row_num.'][color]',
-				$field_name.'['.$row_num.'][color_palette]')
-			)
-				->setPalette($value['color_palette'] ?? null)
-				->setColor($value['color'] ?? null);
+			$dataset_head[] = (new CColor($field_name.'['.$row_num.'][color]', $value['color']))
+				->appendColorPickerJs(false);
 
 			if ($host_pattern_field !== null) {
 				$dataset_head[] = $host_pattern_field;
@@ -272,29 +267,6 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 		$dataset_head[] = (new CDiv(
 			(new CButtonIcon(ZBX_ICON_REMOVE_SMALLER, _('Delete')))->addClass('js-remove')
 		))->addClass('list-item-actions');
-
-		$override_host_html = [];
-
-		if (!$this->field->isTemplateDashboard()) {
-			$override_host_field =
-				(new CWidgetFieldMultiSelectOverrideHost($field_name.'['.$row_num.'][override_hostid]'))
-					->setValue($value['override_hostid']);
-
-			$override_host_field_view = (new CWidgetFieldMultiSelectOverrideHostView($override_host_field))
-				->setFormName($this->form_name)
-				->setWidth(null);
-
-			foreach ($override_host_field_view->getViewCollection() as
-					['label' => $label, 'view' => $view, 'class' => $class]) {
-				$override_host_html[] = $label;
-				$override_host_html[] = (new CFormField($view))
-					->addClass($class)
-					->addClass('override-host-field-view');
-			}
-
-			$override_host_html[] = implode('', $override_host_field_view->getTemplates());
-			$override_host_html[] = new CScriptTag($override_host_field_view->getJavaScript());
-		}
 
 		return (new CListItem([
 			(new CDiv())
@@ -396,8 +368,7 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 									->setEnabled(!in_array($value['type'], [SVG_GRAPH_TYPE_POINTS, SVG_GRAPH_TYPE_BAR]))
 									->setModern()
 							)
-						])
-						->addItem($override_host_html),
+						]),
 					(new CFormGrid())
 						->addItem([
 							new CLabel(_('Y-axis'), $field_name.'['.$row_num.'][axisy]'),
@@ -541,7 +512,9 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 				->addClass('table-col-handle')
 				->addClass(ZBX_STYLE_TD_DRAG_ICON),
 			(new CCol(
-				(new CColorPicker($this->field->getName().'['.$ds_num.'][color][]'))->setColor($color)
+				(new CColor($this->field->getName().'['.$ds_num.'][color][]', $color,
+					'items_'.$ds_num.'_'.$row_num.'_color'
+				))->appendColorPickerJs(false)
 			))->addClass('table-col-color'),
 			(new CCol(new CSpan($row_num.':')))->addClass('table-col-no'),
 			(new CCol([

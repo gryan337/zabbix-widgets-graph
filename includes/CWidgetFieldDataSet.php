@@ -7,7 +7,6 @@ use API,
 	CApiInputValidator;
 
 use Zabbix\Widgets\CWidgetField;
-use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectOverrideHost;
 
 /**
  * Class for data set widget field used in Graph widget configuration Data set tab.
@@ -26,12 +25,12 @@ class CWidgetFieldDataSet extends CWidgetField {
 
 	// Predefined colors for data-sets in JSON format. Each next data set takes next sequential value from palette.
 	public const DEFAULT_COLOR_PALETTE = [
-		'FFD54F', '0EC9AC', '524BBC', 'ED1248', 'D1E754', '2AB5FF', '385CC7', 'EC1594', 'BAE37D', '6AC8FF', 'EE2B29',
-		'3CA20D', '6F4BBC', '00A1FF', 'F3601B', '1CAE59', '45CFDB', '894BBC', '6D6D6D'
+		'FF465C', 'FFD54F', '0EC9AC', '524BBC', 'ED1248', 'D1E754', '2AB5FF', '385CC7', 'EC1594', 'BAE37D',
+		'6AC8FF', 'EE2B29', '3CA20D', '6F4BBC', '00A1FF', 'F3601B', '1CAE59', '45CFDB', '894BBC', '6D6D6D'
 	];
 
-	// First palette from predefined palettes.
-	private const DEFAULT_PALETTE = 0;
+	// First color from the default color palette.
+	private const DEFAULT_COLOR = 'FF465C';
 
 	public function __construct(string $name, ?string $label = null) {
 		parent::__construct($name, $label);
@@ -44,8 +43,7 @@ class CWidgetFieldDataSet extends CWidgetField {
 				'items'					=> ['type' => API_STRINGS_UTF8],
 				'itemids'				=> ['type' => API_IDS],
 				'references'			=> ['type' => API_STRINGS_UTF8],
-				'color'					=> ['type' => API_COLOR, 'flags' => API_NOT_EMPTY],
-				'color_palette'			=> ['type' => API_INT32, 'flags' => API_NOT_EMPTY],
+				'color'					=> ['type' => API_COLOR, 'flags' => API_REQUIRED | API_NOT_EMPTY],
 				'type'					=> ['type' => API_INT32, 'flags' => API_REQUIRED, 'in' => implode(',', [SVG_GRAPH_TYPE_LINE, SVG_GRAPH_TYPE_POINTS, SVG_GRAPH_TYPE_STAIRCASE, SVG_GRAPH_TYPE_BAR])],
 				'stacked'				=> ['type' => API_INT32, 'flags' => API_REQUIRED, 'in' => implode(',', [SVG_GRAPH_STACKED_OFF, SVG_GRAPH_STACKED_ON])],
 				'width'					=> ['type' => API_INT32, 'in' => '0:10'],
@@ -64,7 +62,6 @@ class CWidgetFieldDataSet extends CWidgetField {
 				'aggregate_grouping'	=> ['type' => API_INT32, 'in' => implode(',', [GRAPH_AGGREGATE_BY_ITEM, GRAPH_AGGREGATE_BY_DATASET, self::GRAPH_AGGREGATE_BY_NAME])],
 				'approximation'			=> ['type' => API_INT32, 'in' => implode(',', [APPROXIMATION_MIN, APPROXIMATION_AVG, APPROXIMATION_MAX, APPROXIMATION_ALL])],
 				'data_set_label'		=> ['type' => API_STRING_UTF8, 'length' => 255],
-				'override_hostid'		=> ['type' => API_ANY],
 				'custom_multiplier'		=> ['type' => API_NUMERIC]
 			]]);
 	}
@@ -89,8 +86,7 @@ class CWidgetFieldDataSet extends CWidgetField {
 			'hosts' => [],
 			'items' => [],
 			'itemids' => [],
-			'references' => [],
-			'color_palette' => self::DEFAULT_PALETTE,
+			'color' => self::DEFAULT_COLOR,
 			'type' => SVG_GRAPH_TYPE_LINE,
 			'stacked' => SVG_GRAPH_STACKED_OFF,
 			'width' => SVG_GRAPH_DEFAULT_WIDTH,
@@ -105,7 +101,6 @@ class CWidgetFieldDataSet extends CWidgetField {
 			'aggregate_grouping'=> GRAPH_AGGREGATE_BY_ITEM,
 			'approximation' => APPROXIMATION_AVG,
 			'data_set_label' => '',
-			'override_hostid' => [],
 			'custom_multiplier' => ''
 		];
 	}
@@ -193,20 +188,6 @@ class CWidgetFieldDataSet extends CWidgetField {
 
 				unset($data['references']);
 			}
-
-			if (!$this->isTemplateDashboard()) {
-				$override_host_field = new CWidgetFieldMultiSelectOverrideHost('override_hostid',
-					$label.'/'.($index + 1).'/'._('Override host')
-				);
-
-				$override_host_field->setValue($data['override_hostid']);
-
-				if ($errors = $override_host_field->validate($strict)) {
-					return $errors;
-				}
-
-				$data['override_hostid'] = $override_host_field->getValue();
-			}
 		}
 		unset($data);
 
@@ -284,27 +265,10 @@ class CWidgetFieldDataSet extends CWidgetField {
 				}
 			}
 			else {
-				if (array_key_exists('color', $value)) {
-					$widget_fields[] = [
-						'type' => ZBX_WIDGET_FIELD_TYPE_STR,
-						'name' => $this->name.'.'.$index.'.color',
-						'value' => $value['color']
-					];
-				}
-				elseif (array_key_exists('color_palette', $value)) {
-					$widget_fields[] = [
-						'type' => ZBX_WIDGET_FIELD_TYPE_INT32,
-						'name' => $this->name.'.'.$index.'.color_palette',
-						'value' => $value['color_palette']
-					];
-				}
-			}
-
-			if (array_key_exists(CWidgetField::FOREIGN_REFERENCE_KEY, $value['override_hostid'])) {
 				$widget_fields[] = [
 					'type' => ZBX_WIDGET_FIELD_TYPE_STR,
-					'name' => $this->name.'.'.$index.'.override_hostid.'.CWidgetField::FOREIGN_REFERENCE_KEY,
-					'value' => $value['override_hostid'][CWidgetField::FOREIGN_REFERENCE_KEY]
+					'name' => $this->name.'.'.$index.'.color',
+					'value' => $value['color']
 				];
 			}
 

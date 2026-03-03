@@ -61,7 +61,7 @@ class CWidgetFieldOverrideView extends CWidgetFieldView {
 					},
 					override: ".'.ZBX_STYLE_OVERRIDES_LIST_ITEM.'",
 					overridesList: ".'.ZBX_STYLE_OVERRIDES_LIST.'",
-					onUpdate: () => widget_form.onGraphConfigChange(),
+					onUpdate: () => widget_svggraph_form.onGraphConfigChange(),
 					menu: '.json_encode($this->getGraphOverrideMenu()).'
 				});
 			}
@@ -86,21 +86,21 @@ class CWidgetFieldOverrideView extends CWidgetFieldView {
 					const container = jQuery(".overlay-dialogue-body");
 
 					container.scrollTop(Math.max(container.scrollTop(),
-						widget_form.getForm().scrollHeight - container.height()
+						jQuery("#widget-dialogue-form")[0].scrollHeight - container.height()
 					));
 
 					jQuery("#overrides .multiselect").multiSelect();
 
-					widget_form.updateVariableOrder(jQuery("#overrides"), ".'.ZBX_STYLE_OVERRIDES_LIST_ITEM.'", "or");
-					widget_form.onGraphConfigChange();
+					widget_svggraph_form.updateVariableOrder(jQuery("#overrides"), ".'.ZBX_STYLE_OVERRIDES_LIST_ITEM.'", "or");
+					widget_svggraph_form.onGraphConfigChange();
 				})
 				.bind("afterremove.dynamicRows", function(event, options) {
-					widget_form.updateVariableOrder(jQuery("#overrides"), ".'.ZBX_STYLE_OVERRIDES_LIST_ITEM.'", "or");
-					widget_form.onGraphConfigChange();
+					widget_svggraph_form.updateVariableOrder(jQuery("#overrides"), ".'.ZBX_STYLE_OVERRIDES_LIST_ITEM.'", "or");
+					widget_svggraph_form.onGraphConfigChange();
 				})
 				.bind("tableupdate.dynamicRows", function(event, options) {
-					widget_form.updateVariableOrder(jQuery("#overrides"), ".'.ZBX_STYLE_OVERRIDES_LIST_ITEM.'", "or");
-					widget_form.onGraphConfigChange();
+					widget_svggraph_form.updateVariableOrder(jQuery("#overrides"), ".'.ZBX_STYLE_OVERRIDES_LIST_ITEM.'", "or");
+					widget_svggraph_form.onGraphConfigChange();
 
 					initializeOverrides();
 				});

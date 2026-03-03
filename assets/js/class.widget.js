@@ -115,8 +115,12 @@ class CWidgetSvgGraphRME extends CWidget {
 		}
 	}
 
+	onEdit() {
+		this._deactivateGraph();
+	}
+
 	onFeedback({type, value}) {
-		if (type === CWidgetsData.DATA_TYPE_TIME_PERIOD && this.getFieldsReferredData().has('time_period')) {
+		if (type === CWidgetsData.DATA_TYPE_TIME_PERIOD) {
 			this._startUpdating();
 
 			this.feedback({time_period: value});
@@ -158,11 +162,6 @@ class CWidgetSvgGraphRME extends CWidget {
 
 	getUpdateRequestData() {
 		const request_data = super.getUpdateRequestData();
-		for (let i = 0; i < request_data.fields.ds.length; i++) {
-			if (request_data.fields.ds[i]['override_hostid'][0] === '000000') {
-				request_data.fields.ds[i]['override_hostid'] = [];
-			}
-		}
 
 		if (this._selected_metrics.size > 0) {
 			for (const [overrideKey, [mainFieldKey, overrideFieldKey]] of Object.entries(this.#overrideMapping)) {

@@ -42,7 +42,7 @@ class WidgetForm extends CWidgetForm {
 	public const LEGEND_LINES_MAX = 10;
 
 	public const LEGEND_COLUMNS_MIN = 1;
-	public const LEGEND_COLUMNS_MAX = 10;
+	public const LEGEND_COLUMNS_MAX = 4;
 
 	public const PERCENTILE_MIN = 1;
 	public const PERCENTILE_MAX = 100;

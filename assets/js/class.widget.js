@@ -68,6 +68,9 @@ class CWidgetSvgGraphRME extends CWidget {
 		this._currentScrollTop = 0;
 		this._initialOverrides = {};
 		this.setLastYAxis();
+		this._focusedMenuIndex = -1;
+		this._lastFocusedElement = null;
+		this._focusState = null;
 	}
 
 	initMetricOverrides() {
@@ -107,6 +110,10 @@ class CWidgetSvgGraphRME extends CWidget {
 
 	onDeactivate() {
 		this._deactivateGraph();
+	}
+
+	onEdit() {
+		this._resumeUpdating();
 	}
 
 	onResize() {
@@ -161,6 +168,8 @@ class CWidgetSvgGraphRME extends CWidget {
 	}
 
 	getUpdateRequestData() {
+		this._saveFocusState();
+
 		const request_data = super.getUpdateRequestData();
 
 		if (this._selected_metrics.size > 0) {
@@ -263,6 +272,104 @@ class CWidgetSvgGraphRME extends CWidget {
 		return request_data;
 	}
 
+	_saveFocusState() {
+		const activeElement = document.activeElement;
+
+		// Check if focus is within this widget
+		if (!this._body.contains(activeElement) &&
+				!this._container.querySelector('.dashboard-grid-widget-header')?.contains(activeElement)) {
+			return;
+		}
+
+		this._focusState = null;
+
+		// Check if it's the aggregation button
+		if (activeElement.classList.contains('graph-display-trigger')) {
+			this._focusState = {
+				type: 'aggregation-button'
+			};
+			return;
+		}
+
+		// Check if it's the legend header
+		if (activeElement.classList.contains('svg-graph-legend-header')) {
+			const headers = Array.from(this._body.querySelectorAll('.svg-graph-legend-header'));
+			const index = headers.indexOf(activeElement);
+			if (index !== - 1) {
+				this._focusState = {
+					type: 'legend-header',
+					index: index
+				};
+			}
+			return;
+		}
+
+		// Check if it's a legend item
+		if (activeElement.classList.contains('svg-graph-legend-item')) {
+			const metricSpan = activeElement.querySelector('span');
+			if (metricSpan) {
+				this._focusState = {
+					type: 'legend-item',
+					metric: metricSpan.textContent
+				};
+			}
+			return;
+		}
+	}
+
+	_restoreFocusState() {
+		if (!this._focusState) {
+			return;
+		}
+
+		// Use setTimeout to ensure DOM is fully updated
+		setTimeout(() => {
+			// Don't steal focus if something outside this widget now has it.
+			const activeElement = document.activeElement;
+			const isBodyOrNull = !activeElement || activeElement === document.body;
+			const isInsideThisWidget =
+				this._body.contains(activeElement) ||
+				this._container.querySelector('.dashboard-grid-widget-header')?.contains(activeElement);
+
+			if (!isBodyOrNull && !isInsideThisWidget) {
+				return;
+			}
+
+			try {
+				switch (this._focusState.type) {
+					case 'aggregation-button':
+						const aggButton = this._container.querySelector('.graph-display-trigger');
+						if (aggButton) {
+							aggButton.focus();
+						}
+						break;
+
+					case 'legend-header':
+						const headers = Array.from(this._body.querySelectorAll('.svg-graph-legend-header'));
+						if (headers[this._focusState.index]) {
+							headers[this._focusState.index].focus();
+						}
+						break;
+
+					case 'legend-item':
+						const legendItems = Array.from(this._body.querySelectorAll('.svg-graph-legend-item'));
+						const targetItem = legendItems.find(item => {
+							const span = item.querySelector('span');
+							return span && span.textContent === this._focusState.metric;
+						});
+
+						if (targetItem) {
+							targetItem.focus();
+						}
+						break;
+				}
+			}
+			catch (e) {
+				console.warn('Could not restore focus:', e);
+			}
+		}, 100);
+	}
+
 	processUpdateResponse(response) {
 		this.clearContents();
 
@@ -284,6 +391,9 @@ class CWidgetSvgGraphRME extends CWidget {
 				min_period: 60,
 				...response.svg_options.data
 			});
+
+			// Restore focus
+			this._restoreFocusState();
 		}
 		else {
 			this._has_contents = false;
@@ -311,6 +421,9 @@ class CWidgetSvgGraphRME extends CWidget {
 		this._svg_options = options;
 		this._svg = this._body.querySelector('svg');
 		this._svg.style.display = 'none';
+		this._svg.setAttribute('role', 'img');
+		this._svg.setAttribute('aria-label', t('Graph visualization'));
+
 		jQuery(this._svg).svggraphrme(this);
 
 		this._activateGraph();
@@ -348,7 +461,9 @@ class CWidgetSvgGraphRME extends CWidget {
 		}
 		else {
 			const legendContainer = this._body.querySelector('.svg-graph-legend');
-			legendContainer.style.display = 'none';
+			if (legendContainer) {
+				legendContainer.style.display = 'none';
+			}
 		}
 	}
 
@@ -374,31 +489,13 @@ class CWidgetSvgGraphRME extends CWidget {
 		const trigger = document.createElement('button');
 		trigger.type = 'button';
 		trigger.className = 'graph-display-trigger';
-
-		let color = '#fff';
-		let backgroundColor = '#1e1e1e';
-		let border = '#383838';
-
-		switch (this.#theme) {
-			case 'blue-theme':
-			case 'hc-light':
-				backgroundColor = 'white';
-				color = 'black';
-				border = '#ccd5d9';
-				break;
-		}
+		trigger.setAttribute('aria-label', t('Change how metrics are aggregated in the graph'));
+		trigger.setAttribute('aria-haspopup', 'true');
+		trigger.setAttribute('aria-expanded', 'false');
 
 		const tooltip = document.createElement('div');
-		tooltip.className = 'custom-tooltip';
-		tooltip.style.position = 'absolute';
-		tooltip.style.padding = '4px 8px';
-		tooltip.style.background = backgroundColor;
-		tooltip.style.color = color;
-		tooltip.style.border = `1px solid ${border}`;
-		tooltip.style.borderRadius = '3px';
-		tooltip.style.fontSize = '12px';
-		tooltip.style.pointerEvents = 'none';
-		tooltip.style.opacity = '0';
+		tooltip.className = 'graph-trigger-tooltip';
+		tooltip.setAttribute('role', 'tooltip');
 		document.body.appendChild(tooltip);
 
 		trigger.addEventListener('mouseenter', (e) => {
@@ -426,7 +523,8 @@ class CWidgetSvgGraphRME extends CWidget {
 		trigger.innerHTML = `
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
 				viewBox="0 0 24 24" fill="none" stroke="currentColor"
-				stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+				stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+				aria-hidden="true">
 				<line x1="4" y1="6" x2="20" y2="6"/>
 				<line x1="4" y1="12" x2="16" y2="12"/>
 				<line x1="4" y1="18" x2="12" y2="18"/>
@@ -438,30 +536,20 @@ class CWidgetSvgGraphRME extends CWidget {
 			this._toggleGraphDisplayMenu(trigger);
 		});
 
+		trigger.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				this._toggleGraphDisplayMenu(trigger);
+			}
+		});
+
 		const widgetTitle = widgetHeader.querySelector('h4');
 		widgetHeader.insertBefore(trigger, widgetTitle.nextSibling);
 	}
 
 	_toggleGraphDisplayMenu(trigger) {
 		if (this._graphDisplayMenu) {
-			this._graphDisplayMenu.remove();
-			if (this._graphDisplayMenuCloseHandler) {
-				document.removeEventListener('click', this._graphDisplayMenuCloseHandler);
-				this._graphDisplayMenuCloseHandler = null;
-			}
-
-			if (this._graphDisplayMenuRepositionHandler) {
-				window.removeEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
-				window.removeEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
-				this._graphDisplayMenuRepositionHandler = null;
-			}
-
-			if (this._graphDisplayMenuRafId) {
-				cancelAnimationFrame(this._graphDisplayMenuRafId);
-				this._graphDisplayMenuRafId = null;
-			}
-
-			this._graphDisplayMenu = null;
+			this._closeGraphDisplayMenu(trigger);
 			return;
 		}
 
@@ -469,7 +557,12 @@ class CWidgetSvgGraphRME extends CWidget {
 		menu.className = 'graph-display-menu';
 		menu.style.position = 'fixed';
 		menu.style.zIndex = '100000';
+		menu.setAttribute('role', 'menu');
+		menu.setAttribute('aria-label', t('Graph display options'));
 		this._graphDisplayMenu = menu;
+		this._focusedMenuIndex = -1;
+
+		trigger.setAttribute('aria-expanded', 'true');
 
 		const viewOptions = [
 			{ value: 'original', label: 'Default view', tooltip: 'Shows the original metrics as they were configured in the widget' },
@@ -480,14 +573,27 @@ class CWidgetSvgGraphRME extends CWidget {
 			{ value: 'each', label: 'Each metric', tooltip: 'Displays each metric individually, showing the host and metric name' }
 		];
 
-		viewOptions.forEach(opt => {
+		viewOptions.forEach((opt, index) => {
 			const li = document.createElement('li');
 			li.textContent = opt.label;
-			if (this.#aggOverrideActive === opt.value) li.classList.add('selected');
-			if (opt.tooltip) li.title = opt.tooltip;
+			li.setAttribute('role', 'menuitem');
+			li.setAttribute('tabindex', '-1');
 
-			li.addEventListener('click', (e) => {
-				e.stopPropagation();
+			const isSelected = this.#aggOverrideActive === opt.value;
+			if (isSelected) {
+				li.classList.add('selected');
+				li.setAttribute('aria-checked', 'true');
+			}
+			else {
+				li.setAttribute('aria-checked', 'false');
+			}
+
+			if (opt.tooltip) {
+				li.setAttribute('aria-label', `${opt.label}: ${opt.tooltip}`);
+				li.title = opt.tooltip;
+			}
+
+			const selectOption = () => {
 				this.#aggOverrideActive = opt.value;
 				this._startUpdating();
 
@@ -498,27 +604,62 @@ class CWidgetSvgGraphRME extends CWidget {
 					trigger.classList.remove('active');
 				}
 
-				menu.remove();
-				if (this._graphDisplayMenuCloseHandler) {
-					document.removeEventListener('click', this._graphDisplayMenuCloseHandler);
-					this._graphDisplayMenuCloseHandler = null;
-				}
+				this._closeGraphDisplayMenu(trigger);
+				trigger.focus();
+			}
 
-				if (this._graphDisplayMenuRepositionHandler) {
-					window.removeEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
-					window.removeEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
-					this._graphDisplayMenuRepositionHandler = null;
-				}
+			li.addEventListener('click', (e) => {
+				e.stopPropagation();
+				selectOption();
+			});
 
-				if (this._graphDisplayMenuRafId) {
-					cancelAnimationFrame(this._graphDisplayMenuRafId);
-					this._graphDisplayMenuRafId = null;
+			li.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					selectOption();
 				}
-
-				this._graphDisplayMenu = null;
 			});
 
 			menu.appendChild(li);
+		});
+
+		menu.addEventListener('keydown', (e) => {
+			const menuItems = Array.from(menu.querySelectorAll('li'));
+
+			switch(e.key) {
+				case 'ArrowDown':
+					e.preventDefault();
+					this._focusedMenuIndex = (this._focusedMenuIndex + 1) % menuItems.length;
+					menuItems[this._focusedMenuIndex].focus();
+					break;
+				case 'ArrowUp':
+					e.preventDefault();
+					this._focusedMenuIndex = this._focusedMenuIndex <= 0
+						? menuItems.length - 1
+						: this._focusedMenuIndex - 1;
+					menuItems[this._focusedMenuIndex].focus();
+					break;
+				case 'Home':
+					e.preventDefault();
+					this._focusedMenuIndex = 0;
+					menuItems[0].focus();
+					break;
+				case 'End':
+					e.preventDefault();
+					this._focusedMenuIndex = menuItems.length - 1;
+					menuItems[menuItems.length - 1].focus();
+					break;
+				case 'Escape':
+					e.preventDefault();
+					this._closeGraphDisplayMenu(trigger);
+					trigger.focus();
+					break;
+				case 'Tab':
+					e.preventDefault();
+					this._closeGraphDisplayMenu(trigger);
+					trigger.focus();
+					break;
+			}
 		});
 
 		const placeMenu = () => {
@@ -554,28 +695,49 @@ class CWidgetSvgGraphRME extends CWidget {
 
 		this._graphDisplayMenuCloseHandler = (e) => {
 			if (!menu.contains(e.target) && e.target !== trigger) {
-				menu.remove();
-				document.removeEventListener('click', this._graphDisplayMenuCloseHandler);
-				this._graphDisplayMenuCloseHandler = null;
-
-				if (this._graphDisplayMenuRepositionHandler) {
-					window.removeEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
-					window.removeEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
-					this._graphDisplayMenuRepositionHandler = null;
-				}
-
-				if (this._graphDisplayMenuRafId) {
-					cancelAnimationFrame(this._graphDisplayMenuRafId);
-					this._graphDisplayMenuRafId = null;
-				}
-
-				this._graphDisplayMenu = null;
+				this._closeGraphDisplayMenu(trigger);
 			}
 		};
+
 		document.addEventListener('click', this._graphDisplayMenuCloseHandler);
 
 		document.body.appendChild(menu);
 		placeMenu();
+
+		// Focus on first menu item
+		setTimeout(() => {
+			const firstItem = menu.querySelector('li');
+			if (firstItem) {
+				this._focusedMenuIndex = 0;
+				firstItem.focus();
+			}
+		}, 0);
+	}
+
+	_closeGraphDisplayMenu(trigger) {
+		if (this._graphDisplayMenu) {
+			this._graphDisplayMenu.remove();
+			trigger.setAttribute('aria-expanded', 'false');
+
+			if (this._graphDisplayMenuCloseHandler) {
+				document.removeEventListener('click', this._graphDisplayMenuCloseHandler);
+				this._graphDisplayMenuCloseHandler = null;
+			}
+
+			if (this._graphDisplayMenuRepositionHandler) {
+				window.removeEventListener('scroll', this._graphDisplayMenuRepositionHandler, true);
+				window.removeEventListener('resize', this._graphDisplayMenuRepositionHandler, true);
+				this._graphDisplayMenuRepositionHandler = null;
+			}
+
+			if (this._graphDisplayMenuRafId) {
+				cancelAnimationFrame(this._graphDisplayMenuRafId);
+				this._graphDisplayMenuRafId = null;
+			}
+
+			this._graphDisplayMenu = null;
+			this._focusedMenuIndex = -1;
+		}
 	}
 
 	getActionsContextMenu({can_copy_widget, can_paste_widget}) {
@@ -631,14 +793,51 @@ class CWidgetSvgGraphRME extends CWidget {
 			this._initialOverrides = {};
 		};
 
-		this.legendItems.forEach(item => {
+		const legendContainer = this._body.querySelector('.svg-graph-legend');
+		if (legendContainer) {
+			legendContainer.setAttribute('role', 'list');
+			legendContainer.setAttribute('aria-label', t('Graph legend'));
+		}
+
+		this.legendItems.forEach((item, index) => {
 			const span = item.querySelector('span');
 			const metric = span.textContent;
 
+			item.setAttribute('role', 'listitem');
+			item.setAttribute('tabindex', '0');
+
+			// If the legend is showing min/max/avg then find next 3 siblings
+			const nextSiblings = [];
+			let sibling = item.nextElementSibling;
+			for (let i = 0; i < 3 && sibling; i++) {
+				if (sibling.classList.contains('svg-graph-legend-value')) {
+					nextSiblings.push(sibling);
+				}
+				sibling = sibling.nextElementSibling;
+			}
+
+			// Build a more descriptive aria-label with the values
+			let valueText = '';
+			if (nextSiblings.length === 3) {
+				valueText = `, minimum ${nextSiblings[0].textContent.trim()},
+				               average ${nextSiblings[1].textContent.trim()},
+				               maximum ${nextSiblings[2].textContent.trim()}`;
+
+				// Add aria-hidden to the value divs since they're now
+				// included in the item's label
+				nextSiblings.forEach(div => div.setAttribute('aria-hidden', 'true'));
+			}
+
+			const isSelected = this._selected_metrics.has(metric);
+			item.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+			item.setAttribute('aria-label', `${metric}${valueText}${isSelected ? ', selected' : ''}`);
+
 			this._addLegendHoverHandlers(item, span, metric, tooltip);
 
-			item.addEventListener('click', () => {
-				if (event.ctrlKey) {
+			const handleLegendInteraction = (e) => {
+				const isCtrlClick = e.ctrlKey || e.metaKey;
+
+				if (isCtrlClick) {
 					if (this._selected_metrics.size > 0) {
 						if (this._selected_metrics.has(metric)) {
 							this._unSelectMetric(item, metric);
@@ -696,6 +895,7 @@ class CWidgetSvgGraphRME extends CWidget {
 						}
 					});
 
+					this._updateLegendAriaAttributes();
 					return;
 				}
 
@@ -716,6 +916,16 @@ class CWidgetSvgGraphRME extends CWidget {
 				}
 
 				this._reorderGraphElements();
+				this._updateLegendAriaAttributes();
+			};
+
+			item.addEventListener('click', handleLegendInteraction);
+
+			item.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					handleLegendInteraction(e);
+				}
 			});
 		});
 
@@ -782,6 +992,32 @@ class CWidgetSvgGraphRME extends CWidget {
 
 		this._setupLegendSorting();
 		return false;
+	}
+
+	_updateLegendAriaAttributes() {
+		this.legendItems.forEach(item => {
+			const metric = item.querySelector('span')?.textContent;
+
+			let valueText = '';
+			const nextSiblings = [];
+			let sibling = item.nextElementSibling;
+			for (let i = 0; i < 3 && sibling; i++) {
+				if (sibling.classList.contains('svg-graph-legend-value')) {
+					nextSiblings.push(sibling);
+				}
+				sibling = sibling.nextElementSibling;
+			}
+
+			if (nextSiblings.length === 3) {
+				valueText = `, minimum ${nextSiblings[0].textContent.trim()},
+				               average ${nextSiblings[1].textContent.trim()},
+				               maximum ${nextSiblings[2].textContent.trim()}`;
+			}
+
+			const isSelected = this._selected_metrics.has(metric);
+			item.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+			item.setAttribute('aria-label', `${metric}${valueText}${isSelected ? ', selected' : ''}`);
+		});
 	}
 
 	_setupScrollListener() {
@@ -1086,124 +1322,17 @@ class CWidgetSvgGraphRME extends CWidget {
 	}
 
 	_addAddlGraphStyling() {
-		if ($('style.custom-graph-styles').length === 0) {
-			const customGraphStyle = document.createElement('style');
-			customGraphStyle.classList.add('custom-graph-styles');
-			customGraphStyle.textContent = `
-				.svg-graph-legend-item {
-					display: flex;
-					align-items: center;
-					gap: 6px;
-				}
-				.svg-graph-legend-item span {
-					display: inline-block;
-					white-space: nowrap;
-					overflow: hidden;
-					text-overflow: ellipsis;
-					max-width: 100%;
-					flex: 1;
-				}
-				.graph-display-trigger {
-					background: transparent;
-					border: none;
-					cursor: pointer;
-					color: var(--graph-trigger-color);
-					padding: 2px 4px;
-					font-size: 14px;
-					display: inline-flex;
-					align-items: center;
-					justify-content: center;
-					padding-top: 4px;
-				}
-				.graph-display-trigger:hover {
-					color: var(--graph-trigger-color);
-					background: var(--hover-bg);
-					border-radius: 2px;
-				}
-				.graph-display-trigger.active {
-					color: #1f99e0;
-				}
-				.graph-display-menu {
-					list-style: none;
-					margin: 0;
-					padding: 0;
-					background: var(--menu-bg);
-					border: 1px solid var(--menu-border);
-					min-width: 140px;
-					z-index: 10000;
-				}
-				.graph-display-menu li {
-					padding: 4px 8px;
-					cursor: pointer;
-				}
-				.graph-display-menu li:hover {
-					background: #01579B;
-					color: #fff;
-				}
-				.graph-display-menu li.selected {
-					background-color: rgba(1, 87, 155, 0.3);
-					font-weight: bold;
-				}
-				.custom-tooltip {
-					pointer-events: none;
-					transition: opacity 0.1s;
-					z-index: 10000;
-				}
-			`;
-			document.head.appendChild(customGraphStyle);
-		}
-
 		const tooltip = document.createElement('div');
 		tooltip.id = this._svg.id + '-' + this._widgetid;
-
-		let color = 'white';
-		let backgroundColor = 'rgba(60, 60, 60, 0.95)';
-
-		const root = document.documentElement;
-		switch (this.#theme) {
-			case 'blue-theme':
-			case 'hc-light':
-				backgroundColor = 'rgba(194, 194, 194, 0.95)';
-				color = 'black';
-				root.style.setProperty('--graph-trigger-color', '#646464');
-				root.style.setProperty('--hover-bg', '#cacaca');
-				root.style.setProperty('--menu-bg', '#fff');
-				root.style.setProperty('--menu-border', '#ccd5d9');
-				break;
-			default:
-				root.style.setProperty('--graph-trigger-color', '#c1c1c1');
-				root.style.setProperty('--hover-bg', '#5c5c5c');
-				root.style.setProperty('--menu-bg', '#1e1e1e');
-				root.style.setProperty('--menu-border', '#383838');
-				break;
-		}
-
-		Object.assign(tooltip.style, {
-			position: 'absolute',
-			backgroundColor: backgroundColor,
-			color: color,
-			padding: '6px 10px',
-			borderRadius: '4px',
-			fontSize: '13px',
-			pointerEvents: 'none',
-			whiteSpace: 'nowrap',
-			zIndex: '1000',
-			boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
-			opacity: '0',
-			transition: 'opacity 0.2s ease'
-		});
-
+		tooltip.className = 'legend-item-tooltip';
 		document.body.appendChild(tooltip);
 
 		if (this._legend_tooltip_id !== null) {
 			const oldTooltip = document.getElementById(this._legend_tooltip_id);
-			if (oldTooltip) {
-				oldTooltip.remove();
-			}
+			if (oldTooltip) oldTooltip.remove();
 		}
 
 		this._legend_tooltip_id = tooltip.id;
-
 		return tooltip;
 	}
 
@@ -1212,24 +1341,7 @@ class CWidgetSvgGraphRME extends CWidget {
 			return el.scrollWidth > el.clientWidth;
 		};
 
-		item.style.cursor = 'pointer';
-
 		item.addEventListener('mouseover', (e) => {
-			item.style.fontWeight = 'bold';
-			switch (this.#theme) {
-				case 'blue-theme':
-				case 'hc-light':
-					item.style.backgroundColor = '#c8c8c8';
-					item.style.color = '#000';
-					break;
-				case 'dark-theme':
-				case 'hc-dark':
-				default:
-					item.style.backgroundColor = '#525252';
-					item.style.color = '#fff';
-					break;
-			}
-
 			if (isTextTruncated(span)) {
 				this._showTooltip(metric, e, tooltip);
 			}
@@ -1242,11 +1354,9 @@ class CWidgetSvgGraphRME extends CWidget {
 		});
 
 		item.addEventListener('mouseout', () => {
-			item.style.backgroundColor = '';
-			item.style.color = '';
-			item.style.fontWeight = '';
 			tooltip.style.opacity = '0';
 		});
+
 	}
 
 	_showTooltip(text, event, tooltip) {
@@ -1280,27 +1390,16 @@ class CWidgetSvgGraphRME extends CWidget {
 		const headers = Array.from(legend.querySelectorAll('.svg-graph-legend-header'));
 		if (headers.length < 3) return;
 
-		headers.forEach(header => {
-			header.style.color = '#007bff';
-			header.style.cursor = 'pointer';
-			header.style.userSelect = 'none';
-			header.style.position = 'relative';
-			header.style.paddingRight = '15px';
+		headers.forEach((header, index) => {
+			header.setAttribute('tabindex', '0');
+			header.setAttribute('role', 'button');
+			header.setAttribute('aria-label', `${header.textContent.trim()}, sortable column header`);
 		});
 
 		headers.forEach(header => {
 			const arrow = document.createElement('span');
-			arrow.style.position = 'absolute';
-			arrow.style.right = '2px';
-			arrow.style.top = '50%';
-			arrow.style.transform = 'translateY(-50%)';
-			arrow.style.fontSize = '0.8em';
-			arrow.style.userSelect = 'none';
-			arrow.style.lineHeight = '0.8em';  // squish vertically
-			arrow.style.display = 'flex';
-			arrow.style.flexDirection = 'column';
-			arrow.style.alignItems = 'center';
-			arrow.style.color = '#999';
+			arrow.className = 'svg-graph-legend-sort-arrow';
+			arrow.setAttribute('aria-hidden', 'true');
 			arrow.innerHTML = '&#9650;<br>&#9660;';
 			header.appendChild(arrow);
 		});
@@ -1334,11 +1433,13 @@ class CWidgetSvgGraphRME extends CWidget {
 					arrow.textContent = direction === 1
 						? '\u25B2'
 						: '\u25BC';
-					arrow.style.color = '#007bff';
+					arrow.classList.add('active');
+					header.setAttribute('aria-sort', direction === 1 ? 'ascending' : 'descending');
 				}
 				else {
 					arrow.innerHTML = '&#9650;<br>&#9660;';
-					arrow.style.color = '#999';
+					arrow.classList.remove('active');
+					header.setAttribute('aria-sort', 'none');
 				}
 			});
 
@@ -1408,17 +1509,51 @@ class CWidgetSvgGraphRME extends CWidget {
 			noDataGroups.forEach(group => {
 				group.forEach(div => legend.appendChild(div));
 			});
+
+			// Announce sort to screen readers
+			const sortDirection = direction === 1 ? 'ascending' : 'descending';
+			const announcement = `Sorted by ${headers[sortedCol].textContent.trim()} in ${sortDirection} order`;
+			this._announceToScreenReader(announcement);
 		};
 
 		headers.forEach((header, idx) => {
 			header.addEventListener('click', () => {
 				sortLegend(idx);
 			});
+
+			header.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					sortLegend(idx);
+				}
+			});
 		});
 
 		if (this._legend_sort) {
 			sortLegend(this._legend_sort.colIndex, true);
 		}
+	}
+
+	_announceToScreenReader(message) {
+		let liveRegion = document.getElementById('graph-sr-live-region');
+		if (!liveRegion) {
+			liveRegion = document.createElement('div');
+			liveRegion.id = 'graph-sr-live-region';
+			liveRegion.setAttribute('role', 'status');
+			liveRegion.setAttribute('aria-live', 'polite');
+			liveRegion.setAttribute('aria-atomic', 'true');
+			liveRegion.style.position = 'absolute';
+			liveRegion.style.left = '-10000px';
+			liveRegion.style.width = '1px';
+			liveRegion.style.height = '1px';
+			liveRegion.style.overflow = 'hidden';
+			document.body.appendChild(liveRegion);
+		}
+
+		liveRegion.textContent = '';
+		setTimeout(() => {
+			liveRegion.textContent = message;
+		}, 100);
 	}
 
 	_handleDateStr(x, regex) {

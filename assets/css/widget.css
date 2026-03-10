@@ -298,35 +298,31 @@ div.dashboard-widget-svggraph-rme {
    Widget runtime styles
    ============================================================ */
 
-/* Legend scroll container */
-.svg-graph-legend {
-  overflow: auto;
-}
 
 /* ---- Legend items ---- */
-.svg-graph-legend-item {
+.svg-graph-legend-item-rme {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
 }
 
-.svg-graph-legend-item:hover {
+.svg-graph-legend-item-rme:hover {
   font-weight: bold;
   background-color: var(--legend-item-hover-bg);
   color: var(--legend-item-hover-color);
 }
 
-.svg-graph-legend-item:focus {
+.svg-graph-legend-item-rme:focus {
   outline: none;
 }
 
-.svg-graph-legend-item:focus-visible {
+.svg-graph-legend-item-rme:focus-visible {
   outline: 2px solid #1f99e0;
   outline-offset: -2px;
 }
 
-.svg-graph-legend-item span {
+.svg-graph-legend-item-rme span {
   display: inline-block;
   white-space: nowrap;
   overflow: hidden;
@@ -422,7 +418,7 @@ div.dashboard-widget-svggraph-rme {
 }
 
 /* ---- Legend sort headers ---- */
-.svg-graph-legend-statistic .svg-graph-legend-header {
+.svg-graph-legend-statistic-rme .svg-graph-legend-header-rme {
   position: relative;
   color: #007bff;
   cursor: pointer;
@@ -430,11 +426,11 @@ div.dashboard-widget-svggraph-rme {
   padding-right: 15px;
 }
 
-.svg-graph-legend-header:focus {
+.svg-graph-legend-header-rme:focus {
   outline: none;
 }
 
-.svg-graph-legend-header:focus-visible {
+.svg-graph-legend-header-rme:focus-visible {
   outline: 2px solid #1f99e0;
   outline-offset: -2px;
 }

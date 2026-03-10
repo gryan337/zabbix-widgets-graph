@@ -14,8 +14,11 @@ class RMECSvgGraphLegend extends CDiv {
 	private const ZBX_STYLE_SUPP_CLASS = 'svg-graph-legend-rme';
 
 	private const ZBX_STYLE_GRAPH_LEGEND_STATISTIC = 'svg-graph-legend-statistic';
+	private const ZBX_STYLE_GRAPH_SUPP_LEGEND_STATISTIC = 'svg-graph-legend-statistic-rme';
 	private const ZBX_STYLE_GRAPH_LEGEND_HEADER = 'svg-graph-legend-header';
+	private const ZBX_STYLE_GRAPH_SUPP_LEGEND_HEADER = 'svg-graph-legend-header-rme';
 	private const ZBX_STYLE_GRAPH_LEGEND_ITEM = 'svg-graph-legend-item';
+	private const ZBX_STYLE_GRAPH_SUPP_LEGEND_ITEM = 'svg-graph-legend-item-rme';
 	private const ZBX_STYLE_GRAPH_LEGEND_NO_DATA = 'svg-graph-legend-no-data';
 	private const ZBX_STYLE_GRAPH_LEGEND_VALUE = 'svg-graph-legend-value';
 
@@ -83,9 +86,15 @@ class RMECSvgGraphLegend extends CDiv {
 	private function draw(): void {
 		if ($this->show_statistic) {
 			$this->addItem([
-				(new CDiv(_('min')))->addClass(self::ZBX_STYLE_GRAPH_LEGEND_HEADER),
-				(new CDiv(_('avg')))->addClass(self::ZBX_STYLE_GRAPH_LEGEND_HEADER),
-				(new CDiv(_('max')))->addClass(self::ZBX_STYLE_GRAPH_LEGEND_HEADER)
+				(new CDiv(_('min')))
+					->addClass(self::ZBX_STYLE_GRAPH_LEGEND_HEADER)
+					->addClass(self::ZBX_STYLE_GRAPH_SUPP_LEGEND_HEADER),
+				(new CDiv(_('avg')))
+					->addClass(self::ZBX_STYLE_GRAPH_LEGEND_HEADER)
+					->addClass(self::ZBX_STYLE_GRAPH_SUPP_LEGEND_HEADER),
+				(new CDiv(_('max')))
+					->addClass(self::ZBX_STYLE_GRAPH_LEGEND_HEADER)
+					->addClass(self::ZBX_STYLE_GRAPH_SUPP_LEGEND_HEADER)
 			]);
 		}
 
@@ -94,6 +103,7 @@ class RMECSvgGraphLegend extends CDiv {
 			$this->addItem(
 				(new CDiv(new CSpan($item['name'])))
 					->addClass(self::ZBX_STYLE_GRAPH_LEGEND_ITEM)
+					->addClass(self::ZBX_STYLE_GRAPH_SUPP_LEGEND_ITEM)
 					->setAttribute('style', '--color: '.$item['color'])
 			);
 
@@ -131,6 +141,7 @@ class RMECSvgGraphLegend extends CDiv {
 			->addClass(self::ZBX_STYLE_CLASS)
 			->addClass(self::ZBX_STYLE_SUPP_CLASS)
 			->addClass($this->show_statistic ? self::ZBX_STYLE_GRAPH_LEGEND_STATISTIC : null)
+			->addClass($this->show_statistic ? self::ZBX_STYLE_GRAPH_SUPP_LEGEND_STATISTIC : null)
 			->addStyle('--lines: '.($this->getLinesCount() + ($this->show_statistic ? 1 : 0)).';');
 
 		if (!$this->show_statistic) {

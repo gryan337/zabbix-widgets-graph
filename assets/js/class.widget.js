@@ -293,8 +293,8 @@ class CWidgetSvgGraphRME extends CWidget {
 		}
 
 		// Check if it's the legend header
-		if (activeElement.classList.contains('svg-graph-legend-header')) {
-			const headers = Array.from(this._body.querySelectorAll('.svg-graph-legend-header'));
+		if (activeElement.classList.contains('svg-graph-legend-header-rme')) {
+			const headers = Array.from(this._body.querySelectorAll('.svg-graph-legend-header-rme'));
 			const index = headers.indexOf(activeElement);
 			if (index !== - 1) {
 				this._focusState = {
@@ -306,7 +306,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		}
 
 		// Check if it's a legend item
-		if (activeElement.classList.contains('svg-graph-legend-item')) {
+		if (activeElement.classList.contains('svg-graph-legend-item-rme')) {
 			const metricSpan = activeElement.querySelector('span');
 			if (metricSpan) {
 				this._focusState = {
@@ -346,14 +346,14 @@ class CWidgetSvgGraphRME extends CWidget {
 						break;
 
 					case 'legend-header':
-						const headers = Array.from(this._body.querySelectorAll('.svg-graph-legend-header'));
+						const headers = Array.from(this._body.querySelectorAll('.svg-graph-legend-header-rme'));
 						if (headers[this._focusState.index]) {
 							headers[this._focusState.index].focus();
 						}
 						break;
 
 					case 'legend-item':
-						const legendItems = Array.from(this._body.querySelectorAll('.svg-graph-legend-item'));
+						const legendItems = Array.from(this._body.querySelectorAll('.svg-graph-legend-item-rme'));
 						const targetItem = legendItems.find(item => {
 							const span = item.querySelector('span');
 							return span && span.textContent === this._focusState.metric;
@@ -428,7 +428,7 @@ class CWidgetSvgGraphRME extends CWidget {
 		jQuery(this._svg).svggraphrme(this);
 
 		this._activateGraph();
-		this.legendItems = this._body.querySelectorAll('.svg-graph-legend-item');
+		this.legendItems = this._body.querySelectorAll('.svg-graph-legend-item-rme');
 
 		const hasActiveSelections = this._selected_metrics.size > 0;
 		const preservedOverrides = hasActiveSelections ? {...this._selected_metric_overrides} : null;
@@ -1385,10 +1385,10 @@ class CWidgetSvgGraphRME extends CWidget {
 	};
 
 	_setupLegendSorting() {
-		const legend = this._body.querySelector('.svg-graph-legend-statistic');
+		const legend = this._body.querySelector('.svg-graph-legend-statistic-rme');
 		if (!legend) return;
 
-		const headers = Array.from(legend.querySelectorAll('.svg-graph-legend-header'));
+		const headers = Array.from(legend.querySelectorAll('.svg-graph-legend-header-rme'));
 		if (headers.length < 3) return;
 
 		headers.forEach((header, index) => {
@@ -1454,14 +1454,14 @@ class CWidgetSvgGraphRME extends CWidget {
 				const group = [];
 				const itemDiv = dataDivs[i];
 
-				if (!itemDiv.classList.contains('svg-graph-legend-item')) {
+				if (!itemDiv.classList.contains('svg-graph-legend-item-rme')) {
 					break;
 				}
 
 				group.push(itemDiv);
 				i++;
 
-				while (i < dataDivs.length && !dataDivs[i].classList.contains('svg-graph-legend-item')) {
+				while (i < dataDivs.length && !dataDivs[i].classList.contains('svg-graph-legend-item-rme')) {
 					group.push(dataDivs[i]);
 					i++;
 				}

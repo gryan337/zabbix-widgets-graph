@@ -1040,8 +1040,9 @@ class RMECHistoryManager {
 					'terms' => [
 						'size' => $width,
 						'order' => [
-							'_key' => ZBX_SORT_UP
+							'_key' => 'asc'
 						],
+						'value_type' => 'integer',
 						'script' => $script
 					],
 					'aggs' => $aggs
@@ -1122,7 +1123,7 @@ class RMECHistoryManager {
 	private function getGraphAggregationByWidthFromSql(array $items, $time_from, $time_to, $width) {
 		$sql_select_extra = '';
 		$group_by = 'itemid';
-		$order_by = '';
+		$order_by = 'itemid';
 
 		if ($width !== null) {
 			$period = $time_to - $time_from;
@@ -1131,7 +1132,7 @@ class RMECHistoryManager {
 
 			$sql_select_extra = ','.$calc_field.' AS i';
 			$group_by .= ','.$calc_field;
-			$order_by .= ' ORDER BY itemid,i';
+			$order_by .= ',i';
 		}
 
 		$results = [];
@@ -1169,7 +1170,7 @@ class RMECHistoryManager {
 						' AND clock>='.zbx_dbstr($_time_from).
 						' AND clock<='.zbx_dbstr($time_to).
 					' GROUP BY '.$group_by.
-					$order_by
+					' ORDER BY '.$order_by
 				);
 
 				while (($row = DBfetch($result)) !== false) {

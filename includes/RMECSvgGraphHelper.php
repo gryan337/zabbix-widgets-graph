@@ -1045,13 +1045,14 @@ class RMECSvgGraphHelper {
 			$metrics[] = $a;
 		}
 
-		if (count($metrics) === 1 && $metrics[0]['options']['aggregate_function'] != AGGREGATE_NONE) {
-			$ds_num = $metrics[0]['data_set'];
-			if (array_key_exists('color', $data_sets[$ds_num])) {
-				$metrics[0]['options']['color'] = ($data_sets[$ds_num]['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_PATTERN_ITEM)
-					? '#'.$data_sets[$ds_num]['color']
-					: '#'.$data_sets[$ds_num]['color'][0];
-			}
+		foreach ($metrics as &$metric) {
+			if ($metric['options']['aggregate_grouping'] == GRAPH_AGGREGATE_BY_DATASET) {
+				$ds_num = $metric['data_set'];
+				if (array_key_exists('color', $data_sets[$ds_num])) {
+					$metric['options']['color'] = ($data_sets[$ds_num]['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_PATTERN_ITEM)
+						? '#'.$data_sets[$ds_num]['color']
+						: '#'.$data_sets[$ds_num]['color'][0];
+				}
 		}
 
 		$colorIndex = 0;

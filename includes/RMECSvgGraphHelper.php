@@ -80,8 +80,14 @@ class RMECSvgGraphHelper {
 		// Load aggregated Data for each dataset.
 		self::getMetricsAggregatedData($metrics, $width, $options['data_sets'], $options['legend']['show_aggregation']);
 
+		$start_metric_count = count($metrics);
+		
 		self::suppressZeros($metrics, $options['displaying']);
 		self::limitMetricsDisplayed($metrics, $options);
+
+		if ($start_metric_count != count($metrics)) {
+			self::reselectColors($metrics);
+		}
 
 		$omitted = array(0, 1, null);
 		foreach ($metrics as $data => $metric) {
@@ -210,6 +216,32 @@ class RMECSvgGraphHelper {
 		}
 	}
 
+	private static function reselectColors(array &$metrics): void {
+		$metrics_by_dataset = [];
+
+		foreach ($metrics as $key => $metric) {
+			$data_set_id = $metric['data_set'];
+
+			if (isset($metric['options']['color_palette'])) {
+				if (!isset($metrics_by_dataset[$data_set_id])) {
+					$metrics_by_dataset[$data_set_id] = [
+						'palette' => $metric['options']['color_palette'],
+						'keys' => []
+					];
+				}
+				$metrics_by_dataset[$data_set_id]['keys'][] = $key;
+			}
+		}
+
+		foreach ($metrics_by_dataset as $data_set_id => $dataset_info) {
+			$colors = CColorPicker::getPaletteColors($dataset_info['palette'], count($dataset_info['keys']));
+
+			foreach ($dataset_info['keys'] as $index => $metric_key) {
+				$metrics[$metric_key]['options']['color'] = $colors[$index];
+			}
+		}
+	}
+	
 	private static function getMetricsPattern(array &$metrics, array $data_sets, string $templateid,
 			string $override_hostid): void {
 		$max_metrics = SVG_GRAPH_MAX_NUMBER_OF_METRICS;

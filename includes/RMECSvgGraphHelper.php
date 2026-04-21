@@ -89,6 +89,8 @@ class RMECSvgGraphHelper {
 			self::reselectColors($metrics);
 		}
 
+		self::updateSingleDataSetColors($metrics);
+
 		$omitted = array(0, 1, null);
 		foreach ($metrics as $data => $metric) {
 			if (!in_array($metric['options']['custom_multiplier'], $omitted)) {
@@ -220,7 +222,7 @@ class RMECSvgGraphHelper {
 		$metrics_by_dataset = [];
 
 		foreach ($metrics as $key => $metric) {
-			if ($metric['has_palette']) {
+			if (array_key_exists('has_palette', $metric) && $metric['has_palette']) {
 				$data_set_id = $metric['data_set'];
 				if (!isset($metrics_by_dataset[$data_set_id])) {
 					$metrics_by_dataset[$data_set_id] = [
@@ -237,6 +239,35 @@ class RMECSvgGraphHelper {
 
 			foreach ($dataset_info['keys'] as $index => $metric_key) {
 				$metrics[$metric_key]['options']['color'] = $colors[$index];
+			}
+		}
+	}
+
+	private static function updateSingleDataSetColors(array &$metrics): void {
+		$dataSetCounts = [];
+		foreach ($metrics as $metric) {
+			if (isset($metric['data_set'])
+					&& isset($metric['options']['dataset_type'])
+					&& $metric['options']['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_SINGLE_ITEM) {
+				$dataSet = $metric['data_set'];
+				if (!isset($dataSetCounts[$dataSet])) {
+					$dataSetCounts[$dataSet] = 0;
+				}
+				$dataSetCounts[$dataSet]++;
+			}
+		}
+
+		foreach ($metrics as &$metric) {
+			if (isset($metric['data_set'])
+					&& isset($metric['options']['dataset_type'])
+					&& $metric['options']['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_SINGLE_ITEM) {
+				$dataSet = $metric['data_set'];
+
+				if (isset($dataSetCounts[$dataSet]) && $dataSetCounts[$dataSet] === 1) {
+					if (isset($metric['options']['original_color'])) {
+						$metric['options']['color'] = $metric['options']['original_color'];
+					}
+				}
 			}
 		}
 	}

@@ -220,9 +220,8 @@ class RMECSvgGraphHelper {
 		$metrics_by_dataset = [];
 
 		foreach ($metrics as $key => $metric) {
-			$data_set_id = $metric['data_set'];
-
-			if (isset($metric['options']['color_palette'])) {
+			if ($metric['has_palette']) {
+				$data_set_id = $metric['data_set'];
 				if (!isset($metrics_by_dataset[$data_set_id])) {
 					$metrics_by_dataset[$data_set_id] = [
 						'palette' => $metric['options']['color_palette'],
@@ -368,11 +367,12 @@ class RMECSvgGraphHelper {
 				? CColorPicker::getColorVariations($data_set['color'], count($items))
 				: CColorPicker::getPaletteColors($data_set['color_palette'], count($items));
 
+			$has_palette = array_key_exists('color', $data_set) ? false : true;
+
 			foreach ($items as $item) {
-#				$data_set['color'] = array_shift($colors);
 				$temp_color = $colors[$max_metrics % (count($colors))];
 				$data_set['color'] = $temp_color;
-				$metrics[] = $item + ['data_set' => $index, 'options' => $data_set];
+				$metrics[] = $item + ['data_set' => $index, 'options' => $data_set, 'has_palette' => $has_palette];
 				$max_metrics--;
 			}
 		}

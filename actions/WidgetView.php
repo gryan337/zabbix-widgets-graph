@@ -201,6 +201,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			}
 
 			if (!empty($newItemids)) {
+				$ds['original_color'] = '#'.$ds['color'][0];
 				$ds['itemids'] = $newItemids;
 				$ds['color'] = $newColors;
 			}

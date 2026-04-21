@@ -118,6 +118,25 @@ class RMECSvgGraphMetricsLine extends CSvgGroup {
 	}
 
 	public function toString($destroy = true): string {
+		switch ($this->metric['options']['approximation']) {
+			case APPROXIMATION_AVG:
+				$max = max(array_column($this->metric['points'], 'avg'));
+				$min = min(array_column($this->metric['points'], 'avg'));
+				break;
+			case APPROXIMATION_MIN:
+				$max = max(array_column($this->metric['points'], 'min'));
+				$min = min(array_column($this->metric['points'], 'min'));
+				break;
+			case APPROXIMATION_MAX:
+				$max = max(array_column($this->metric['points'], 'max'));
+				$min = min(array_column($this->metric['points'], 'max'));
+				break;
+			case APPROXIMATION_ALL:
+				$max = max(array_column($this->metric['points'], 'max'));
+				$min = min(array_column($this->metric['points'], 'min'));
+				break;
+		}
+		
 		$this
 			->setAttribute('data-set', $this->options['type'] == SVG_GRAPH_TYPE_LINE ? 'line' : 'staircase')
 			->setAttribute('data-metric', $this->metric['name'])
@@ -125,8 +144,8 @@ class RMECSvgGraphMetricsLine extends CSvgGroup {
 			->setAttribute('data-units', $this->metric['units'])
 			->setAttribute('data-axisy', $this->options['axisy'])
 			->setAttribute('data-index', $this->metric['data_set'])
-			->setAttribute('data-max', max(array_column($this->metric['points'], 'max')))
-			->setAttribute('data-min', min(array_column($this->metric['points'], 'min')))
+			->setAttribute('data-max', $max)
+			->setAttribute('data-min', $min)
 			->draw();
 
 		return parent::toString($destroy);

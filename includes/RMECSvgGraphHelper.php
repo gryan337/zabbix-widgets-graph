@@ -1116,6 +1116,7 @@ class RMECSvgGraphHelper {
 						? '#'.$data_sets[$ds_num]['color']
 						: '#'.$data_sets[$ds_num]['color'][0];
 				}
+			}
 		}
 
 		$colorIndex = 0;

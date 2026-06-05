@@ -235,7 +235,24 @@ class RMECSvgGraphHelper {
 		}
 
 		foreach ($metrics_by_dataset as $data_set_id => $dataset_info) {
-			$colors = CColorPicker::getPaletteColors($dataset_info['palette'], count($dataset_info['keys']));
+			$count = count($dataset_info['keys']);
+			$palette_row = CColorPicker::PALETTE_COLORS[$dataset_info['palette']];
+			$palette_size = count($palette_row);
+
+			// Use count to determine hop size (coprime with 18 ensures all colors used)
+			$hop_sizes = [5, 7, 11, 13, 17];
+			$hop_size = $hop_sizes[$count % count($hop_sizes)];
+
+			// Starting offset based on count
+			$start_offset = ($count * 3) % $palette_size;
+
+			// Generate colors - this will cycle through all palette colors
+			$colors = [];
+			$position = $start_offset;
+			for ($i = 0; $i < $count; $i++) {
+				$colors[] = '#' . $palette_row[$position];
+				$position = ($position + $hop_size) % $palette_size;
+			}
 
 			foreach ($dataset_info['keys'] as $index => $metric_key) {
 				$metrics[$metric_key]['options']['color'] = $colors[$index];
@@ -396,13 +413,33 @@ class RMECSvgGraphHelper {
 
 			$colors = array_key_exists('color', $data_set)
 				? CColorPicker::getColorVariations($data_set['color'], count($items))
-				: CColorPicker::getPaletteColors($data_set['color_palette'], count($items));
+				: [];
 
-			$has_palette = array_key_exists('color', $data_set) ? false : true;
+			$has_palette = !array_key_exists('color', $data_set);
+
+			if ($has_palette) {
+				// Generate colors by wrapping around the palette with deterministic randomization
+				$palette_row = CColorPicker::PALETTE_COLORS[$data_set['color_palette']];
+				$palette_size = count($palette_row);
+
+				// Use count to determine hop size (coprime with 18 ensures all colors used)
+				$item_count = count($items);
+				$hop_sizes = [5, 7, 11, 13, 17];
+				$hop_size = $hop_sizes[$item_count % count($hop_sizes)];
+
+				// Starting offset based on count
+				$start_offset = ($item_count * 3) % $palette_size;
+
+				// Generate colors - this will cycle through all palette colors
+				$position = $start_offset;
+				for ($i = 0; $i < $item_count; $i++) {
+					$colors[] = '#' . $palette_row[$position];
+					$position = ($position + $hop_size) % $palette_size;
+				}
+			}
 
 			foreach ($items as $item) {
-				$temp_color = $colors[$max_metrics % (count($colors))];
-				$data_set['color'] = $temp_color;
+				$data_set['color'] = array_shift($colors);
 				$metrics[] = $item + ['data_set' => $index, 'options' => $data_set, 'has_palette' => $has_palette];
 				$max_metrics--;
 			}

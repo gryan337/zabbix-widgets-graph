@@ -56,6 +56,7 @@ class RMECSvgGraphHelper {
 		// Find which metrics will be shown in graph and calculate time periods and display options.
 		self::getMetricsPattern($metrics, $options['data_sets'], $options['templateid'], $options['override_hostid']);
 		self::getMetricsItems($metrics, $options['data_sets'], $options['templateid'], $options['override_hostid']);
+		$start_metric_count = count($metrics);
 		if ((version_compare(ZABBIX_VERSION, '7.0.20', '>=') && version_compare(ZABBIX_VERSION, '7.2.0', '<'))
 			|| (version_compare(ZABBIX_VERSION, '7.4.4', '>='))) {
 			CGraphHelper::calculateMetricsDelay($metrics);
@@ -80,8 +81,6 @@ class RMECSvgGraphHelper {
 		// Load aggregated Data for each dataset.
 		self::getMetricsAggregatedData($metrics, $width, $options['data_sets'], $options['legend']['show_aggregation']);
 
-		$start_metric_count = count($metrics);
-		
 		self::suppressZeros($metrics, $options['displaying']);
 		self::limitMetricsDisplayed($metrics, $options);
 
@@ -866,25 +865,44 @@ class RMECSvgGraphHelper {
 		// To reduce number of requests, group metrics by time range.
 		$tr_groups = [];
 
+		$items_to_resolve = [];
+		$metrics_to_update = [];
+		$batch_size = 10000;
+
 		foreach ($metrics as $index => &$metric) {
 			if ($metric['options']['aggregate_function'] != AGGREGATE_NONE) {
 				continue;
 			}
 
 			if ($metric['options']['data_set_label'] !== '') {
-				$resolved = CMacrosResolverHelper::resolveItemBasedWidgetMacros(
-					[$metric['itemid'] => $metric + ['label' => $metric['options']['data_set_label']]],
-					['label' => 'label']
-				);
-				$resolved_value = $resolved[$metric['itemid']]['label'];
-				if ($resolved_value !== null && $resolved_value !== '' && $resolved_value !== '*UNKNOWN*') {
-					$metric['name'] = $resolved_value;
-				}
-				else if ($resolved_value === $metric['options']['data_set_label']) {
-					$metric['name'] = $metric['hosts'][0]['name'].NAME_DELIMITER.$metric['options']['data_set_label'];
-				}
-				else {
-					$metric['name'] = $metric['hosts'][0]['name'].NAME_DELIMITER.$metric['name'];
+				$items_to_resolve[$metric['itemid']] = $metric + ['label' => $metric['options']['data_set_label']];
+				$metrics_to_update[$index] = $metric['itemid'];
+
+				// Process batch when it reached the limit
+				if (count($items_to_resolve) >= $batch_size) {
+					$resolved = CMacrosResolverHelper::resolveItemBasedWidgetMacros(
+						$items_to_resolve,
+						['label' => 'label']
+					);
+
+					// Update metrics with resolved values
+					foreach ($metrics_to_update as $idx => $itemid) {
+						$resolved_value = $resolved[$itemid]['label'];
+
+						if ($resolved_value !== null && $resolved_value !== '' && $resolved_value !== '*UNKNOWN*') {
+							$metrics[$idx]['name'] = $resolved_value;
+						}
+						else if ($resolved_value === $metrics[$idx]['options']['data_set_label']) {
+							$metrics[$idx]['name'] = $metrics[$idx]['hosts'][0]['name'].NAME_DELIMITER.$metrics[$idx]['options']['data_set_label'];
+						}
+						else {
+							$metrics[$idx]['name'] = $metrics[$idx]['hosts'][0]['name'].NAME_DELIMITER.$metrics[$idx]['name'];
+						}
+					}
+
+					// Reset for the next batch
+					$items_to_resolve = [];
+					$metrics_to_update = [];
 				}
 			}
 			else {
@@ -908,6 +926,29 @@ class RMECSvgGraphHelper {
 				'source' => ($metric['source'] == SVG_GRAPH_DATA_SOURCE_HISTORY) ? 'history' : 'trends'
 			];
 		}
+
+		// Process remaining items in final batch
+		if (!empty($items_to_resolve)) {
+			$resolved = CMacrosResolverHelper::resolveItemBasedWidgetMacros(
+				$items_to_resolve,
+				['label' => 'label']
+			);
+
+			foreach ($metrics_to_update as $index => $itemid) {
+				$resolved_value = $resolved[$itemid]['label'];
+
+				if ($resolved_value !== null && $resolved_value !== '' && $resolved_value !== '*UNKNOWN*') {
+					$metrics[$index]['name'] = $resolved_value;
+				}
+				else if ($resolved_value === $metrics[$index]['options']['data_set_label']) {
+					$metrics[$index]['name'] = $metrics[$index]['hosts'][0]['name'].NAME_DELIMITER.$metrics[$index]['options']['data_set_label'];
+				}
+				else {
+					$metrics[$index]['name'] = $metrics[$index]['hosts'][0]['name'].NAME_DELIMITER.$metrics[$index]['name'];
+				}
+			}
+		}
+
 		unset($metric);
 
 		// Request data.
@@ -1013,6 +1054,43 @@ class RMECSvgGraphHelper {
 		$dataset_metrics = [];
 		$agg_ds_names = [];
 
+		$batch_size = 10000;
+		$items_to_resolve = [];
+		$resolved_all = [];
+
+		// First pass: collect ALL items that need resolution
+		foreach ($metrics as $metric_num => $metric) {
+			if ($metric['options']['aggregate_function'] == AGGREGATE_NONE) {
+				continue;
+			}
+
+			$items_to_resolve[$metric['itemid']] = $metric + ['label' => $metric['options']['data_set_label']];
+
+			// Process batch when limit reached
+			if (count($items_to_resolve) >= $batch_size) {
+				$resolved = CMacrosResolverHelper::resolveItemBasedWidgetMacros(
+					$items_to_resolve,
+					['label' => 'label']
+				);
+				if (is_array($resolved)) {
+					$resolved_all = $resolved_all + $resolved;
+				}
+				$items_to_resolve = [];
+			}
+		}
+
+		// Process remaining items
+		if (!empty($items_to_resolve)) {
+			$resolved = CMacrosResolverHelper::resolveItemBasedWidgetMacros(
+				$items_to_resolve,
+				['label' => 'label']
+			);
+			if (is_array($resolved)) {
+				$resolved_all = $resolved_all + $resolved;
+			}
+		}
+
+		// Now run the original loop logic with pre-resolved values
 		foreach ($metrics as $metric_num => &$metric) {
 			if ($metric['options']['aggregate_function'] == AGGREGATE_NONE) {
 				continue;
@@ -1023,11 +1101,18 @@ class RMECSvgGraphHelper {
 				$agg_ds_names[$dataset_num] = [];
 			}
 
-			$resolved = CMacrosResolverHelper::resolveItemBasedWidgetMacros(
-				[$metric['itemid'] => $metric + ['label' => $metric['options']['data_set_label']]],
-				['label' => 'label']
-			);
-			$resolved_value = $resolved[$metric['itemid']]['label'];
+			// Use resolved value or fallback to original method
+			if (isset($resolved_all[$metric['itemid']]['label'])) {
+				$resolved_value = $resolved_all[$metric['itemid']]['label'];
+			}
+			else {
+				// Fallback to original method if item not in batch results
+				$resolved = CMacrosResolverHelper::resolveItemBasedWidgetMacros(
+					[$metric['itemid'] => $metric + ['label' => $metric['options']['data_set_label']]],
+					['label' => 'label']
+				);
+				$resolved_value = $resolved[$metric['itemid']]['label'];
+			}
 
 			if ($metric['options']['aggregate_grouping'] == GRAPH_AGGREGATE_BY_ITEM ||
 					$metric['options']['aggregate_grouping'] == CWidgetFieldDataSet::GRAPH_AGGREGATE_BY_NAME) {
